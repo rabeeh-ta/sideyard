@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Installs Sideyard on a Linux server with systemd, or upgrades it.
 #
-#   curl -fsSL https://github.com/OWNER/REPO/releases/latest/download/install.sh | sudo bash
+#   curl -fsSL https://github.com/rabeeh-ta/sideyard/releases/latest/download/install.sh | sudo bash
 #
 # A fresh install asks for your domain, an email for Let's Encrypt and an
 # admin password, then starts Sideyard as a systemd service. Running it again

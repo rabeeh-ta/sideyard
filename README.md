@@ -17,7 +17,7 @@ Sideyard itself is one Go binary with Caddy embedded for routing and certificate
 Point `*.example.com` at a fresh Ubuntu or Debian server, then run:
 
 ```sh
-curl -fsSL https://github.com/<owner>/<repo>/releases/latest/download/install.sh | sudo bash
+curl -fsSL https://github.com/rabeeh-ta/sideyard/releases/latest/download/install.sh | sudo bash
 ```
 
 It asks for your domain, an email for Let's Encrypt and an admin password, then starts Sideyard as a systemd service and prints the dashboard's address. New versions show up in the dashboard (**Platform settings → Updates**) and install with one click, or automatically. [docs/install.md](docs/install.md) has the details: what the installer does, unattended installs, settings, backups, and publishing releases (`git tag v0.1.0 && git push origin v0.1.0`).

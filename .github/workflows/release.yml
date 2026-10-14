@@ -2,7 +2,7 @@
 #   git tag v1.2.3 && git push origin v1.2.3
 # The release carries the Linux binaries, release.json (Sideyard's update
 # check reads it), SHA256SUMS and install.sh, so servers install with
-#   curl -fsSL https://github.com/<owner>/<repo>/releases/latest/download/install.sh | sudo bash
+#   curl -fsSL https://github.com/rabeeh-ta/sideyard/releases/latest/download/install.sh | sudo bash
 # The repository must be public for servers to download releases.
 #
 # Servers run what this publishes as root, so the job that runs npm and Go

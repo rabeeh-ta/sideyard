@@ -17,7 +17,7 @@ If the domain is on Cloudflare, set these records to **DNS only** (grey cloud). 
 ## 2. Install
 
 ```sh
-curl -fsSL https://github.com/<owner>/<repo>/releases/latest/download/install.sh | sudo bash
+curl -fsSL https://github.com/rabeeh-ta/sideyard/releases/latest/download/install.sh | sudo bash
 ```
 
 It asks three things:
@@ -50,7 +50,7 @@ journalctl SIDEYARD_PROJECT_ID=1 -f     # a project's log (the dashboard's Logs 
 For scripts and cloud-init, pass the answers as variables (after `sudo`, which drops the environment) and `--yes`:
 
 ```sh
-curl -fsSL https://github.com/<owner>/<repo>/releases/latest/download/install.sh \
+curl -fsSL https://github.com/rabeeh-ta/sideyard/releases/latest/download/install.sh \
   | sudo SIDEYARD_DOMAIN=example.com SIDEYARD_ACME_EMAIL=you@example.com bash -s -- --yes
 ```
 
@@ -109,7 +109,7 @@ To rebuild a dead server: install Sideyard, stop it, put your saved `master.key`
 
 ## Publishing releases
 
-Releases come from this repository's [release workflow](../.github/workflows/release.yml). Push a version tag and it runs the tests, builds `make release VERSION=<tag> SOURCE=https://github.com/<owner>/<repo>`, and publishes the Linux binaries, `release.json` (what the update check reads), `SHA256SUMS` and `install.sh` as a GitHub release:
+Releases come from this repository's [release workflow](../.github/workflows/release.yml). Push a version tag and it runs the tests, builds `make release VERSION=<tag> SOURCE=<this repository's URL>`, and publishes the Linux binaries, `release.json` (what the update check reads), `SHA256SUMS` and `install.sh` as a GitHub release:
 
 ```sh
 git tag v0.1.0 && git push origin v0.1.0
