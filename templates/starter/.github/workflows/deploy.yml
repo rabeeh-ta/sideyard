@@ -1,0 +1,50 @@
+# Builds the app into one Linux binary and uploads it to Sideyard.
+# Repo setup (once):
+#   gh secret set SIDEYARD_TOKEN --body "<deploy token>"
+#   gh variable set SIDEYARD_URL --body "https://sideyard.example.com"
+#   gh variable set SIDEYARD_PROJECT --body "<project name>"
+#   gh variable set SIDEYARD_ARCH --body "arm64"   # only if the server is ARM
+name: Deploy to Sideyard
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Build frontend
+        working-directory: web
+        run: npm ci && npm run build
+
+      - name: Build binary
+        run: go build -trimpath -ldflags="-s -w" -o app .
+        env:
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: ${{ vars.SIDEYARD_ARCH || 'amd64' }}
+
+      - name: Deploy
+        run: ./scripts/deploy.sh app
+        env:
+          SIDEYARD_URL: ${{ vars.SIDEYARD_URL }}
+          SIDEYARD_PROJECT: ${{ vars.SIDEYARD_PROJECT }}
+          SIDEYARD_TOKEN: ${{ secrets.SIDEYARD_TOKEN }}

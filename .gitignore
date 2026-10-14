@@ -1,0 +1,6 @@
+/sideyard
+/dist/
+/.sideyard-data/
+node_modules/
+web/dist/*
+!web/dist/.gitkeep
