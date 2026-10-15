@@ -103,7 +103,7 @@ function BackupsSection({ initial, onSaved }: { initial: BackupSettings; onSaved
     <Section
       id="backups"
       title="Backups"
-      description="Copies every app's databases and Sideyard's own database to an S3-compatible bucket on a schedule. Use a bucket and key just for backups, separate from any app's storage."
+      description="Copies every app's databases, and Sideyard's own, to an S3-compatible bucket on a schedule. Use a bucket only for backups."
     >
       <form className="stack" onSubmit={save}>
         <label className="toggle">
@@ -169,8 +169,7 @@ function BackupsSection({ initial, onSaved }: { initial: BackupSettings; onSaved
           </label>
         </div>
         <small className="muted">
-          The newest three copies of each database are always kept, however old. The master key is never uploaded: download
-          it below and store it somewhere safe, or a restored Sideyard can't read its variables.
+          The newest three copies are always kept. The master key isn't uploaded: download it under Security.
         </small>
         {status && <p className={status.ok ? 'success' : 'error'}>{status.message}</p>}
         <div className="inline-form">
@@ -261,7 +260,7 @@ function EmailSection({ initial, onSaved }: { initial: EmailSettings; onSaved: (
     <Section
       id="email"
       title="Email"
-      description="One provider for every app, over SMTP (Resend, Postmark, SES, Mailgun and others all offer it). Apps send through Sideyard's API and never see these credentials."
+      description="One SMTP provider for every app (Resend, Postmark, SES, Mailgun…). Apps send through Sideyard and never see these credentials."
     >
       <form className="stack" onSubmit={save}>
         <label className="toggle">
@@ -373,24 +372,23 @@ function SecuritySection() {
           Change password
         </button>
       </form>
-      <form className="inline-form" onSubmit={downloadKey} style={{ marginTop: 18 }}>
-        <label className="field grow">
-          <span>Master key</span>
+      <form className="field" onSubmit={downloadKey} style={{ marginTop: 18 }}>
+        <span>Master key</span>
+        <div className="inline-form">
           <input
+            className="grow"
             type="password"
             value={keyPassword}
             onChange={(e) => setKeyPassword(e.target.value)}
             placeholder="your password, to confirm"
+            aria-label="Your password, to download the master key"
             autoComplete="current-password"
           />
-          <small className="muted">
-            Decrypts every variable and saved credential. Keep a copy off the server: restoring Sideyard from backups needs
-            it.
-          </small>
-        </label>
-        <button className="ghost" disabled={!keyPassword}>
-          Download master key
-        </button>
+          <button className="ghost" disabled={!keyPassword}>
+            Download master key
+          </button>
+        </div>
+        <small className="muted">Decrypts every saved secret. Keep a copy off the server: restoring from backups needs it.</small>
       </form>
     </Section>
   )

@@ -170,8 +170,9 @@ type DomainStatus struct {
 }
 
 type CertInfo struct {
-	Issuer   string    `json:"issuer"`
-	NotAfter time.Time `json:"notAfter"`
+	Issuer    string    `json:"issuer"`
+	NotBefore time.Time `json:"notBefore"`
+	NotAfter  time.Time `json:"notAfter"`
 }
 
 func (p *Platform) DomainStatus(ctx context.Context, name string) ([]DomainStatus, error) {
@@ -239,6 +240,18 @@ func dnsError(err error) string {
 	return err.Error()
 }
 
+// issuerName names who signed cert: the organization ("Let's Encrypt"),
+// or Caddy's own CA, which signs names a public CA won't (*.localhost).
+func issuerName(cert *x509.Certificate) string {
+	if strings.HasPrefix(cert.Issuer.CommonName, "Caddy Local Authority") {
+		return "this server's own CA"
+	}
+	if len(cert.Issuer.Organization) > 0 {
+		return cert.Issuer.Organization[0]
+	}
+	return cert.Issuer.CommonName
+}
+
 // certificate reads the certificate Caddy obtained for host, if any.
 func (p *Platform) certificate(host string) *CertInfo {
 	matches, _ := filepath.Glob(filepath.Join(p.cfg.DataDir, "caddy", "certificates", "*", host, host+".crt"))
@@ -257,11 +270,7 @@ func (p *Platform) certificate(host string) *CertInfo {
 			continue
 		}
 		if best == nil || cert.NotAfter.After(best.NotAfter) {
-			issuer := cert.Issuer.CommonName
-			if len(cert.Issuer.Organization) > 0 {
-				issuer = cert.Issuer.Organization[0]
-			}
-			best = &CertInfo{Issuer: issuer, NotAfter: cert.NotAfter.UTC()}
+			best = &CertInfo{Issuer: issuerName(cert), NotBefore: cert.NotBefore.UTC(), NotAfter: cert.NotAfter.UTC()}
 		}
 	}
 	return best

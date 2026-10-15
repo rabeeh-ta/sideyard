@@ -154,42 +154,44 @@ export function SystemPage() {
 
       <div className="card section">
         <h3>Disks</h3>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Mounted at</th>
-              <th>Device</th>
-              <th>Type</th>
-              <th style={{ width: '34%' }}>Used</th>
-              <th className="num">Free</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sys.mounts.map((m) => {
-              const share = m.usedBytes / Math.max(m.usedBytes + m.availBytes, 1)
-              return (
-                <tr key={m.path}>
-                  <td>
-                    <code>{m.path}</code> {m.data && <span className="badge tone-green">Sideyard data</span>}
-                  </td>
-                  <td className="muted">{m.device || '—'}</td>
-                  <td className="muted">{m.fsType || '—'}</td>
-                  <td>
-                    <div className="meter-cell">
-                      <div className={`progress ${share >= 0.9 ? 'high' : ''}`}>
-                        <div style={{ width: `${share * 100}%` }} />
+        <div className="scroll-x">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Mounted at</th>
+                <th>Device</th>
+                <th>Type</th>
+                <th style={{ width: '34%' }}>Used</th>
+                <th className="num">Free</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sys.mounts.map((m) => {
+                const share = m.usedBytes / Math.max(m.usedBytes + m.availBytes, 1)
+                return (
+                  <tr key={m.path}>
+                    <td>
+                      <code>{m.path}</code> {m.data && <span className="badge tone-green">Sideyard data</span>}
+                    </td>
+                    <td className="muted">{m.device || '—'}</td>
+                    <td className="muted">{m.fsType || '—'}</td>
+                    <td>
+                      <div className="meter-cell">
+                        <div className={`progress ${share >= 0.9 ? 'high' : ''}`}>
+                          <div style={{ width: `${share * 100}%` }} />
+                        </div>
+                        <span className="small-text muted">
+                          {formatBytes(m.usedBytes)} of {formatBytes(m.totalBytes)} · {Math.round(share * 100)}%
+                        </span>
                       </div>
-                      <span className="small-text muted">
-                        {formatBytes(m.usedBytes)} of {formatBytes(m.totalBytes)} · {Math.round(share * 100)}%
-                      </span>
-                    </div>
-                  </td>
-                  <td className="num">{formatBytes(m.availBytes)}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+                    </td>
+                    <td className="num">{formatBytes(m.availBytes)}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="card section">
@@ -273,60 +275,62 @@ function AppsTable({ sys }: { sys: SystemInfo }) {
       {apps.length === 0 ? (
         <p className="muted">No projects yet.</p>
       ) : (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>App</th>
-              <th>Status</th>
-              <th className="num">CPU</th>
-              <th style={{ width: '28%' }}>Memory of its limit</th>
-              <th className="num">Data</th>
-              <th className="num">Up</th>
-            </tr>
-          </thead>
-          <tbody>
-            {apps.map((a) => {
-              const running = a.state === 'running' || a.state === 'crashed'
-              const share = a.memoryMaxBytes ? a.memoryBytes / a.memoryMaxBytes : 0
-              return (
-                <tr key={a.name} className="clickable" onClick={() => (window.location.hash = `/p/${encodeURIComponent(a.name)}`)}>
-                  <td>
-                    <a href={`#/p/${encodeURIComponent(a.name)}`}>{a.name}</a>
-                  </td>
-                  <td>
-                    <StatusBadge state={a.state} />
-                  </td>
-                  <td className="num">{running ? percent(a.cpuPercent) : '—'}</td>
-                  <td>
-                    {running ? (
-                      <div className="meter-cell">
-                        <div className={`progress ${share >= 0.9 ? 'high' : ''}`}>
-                          <div style={{ width: `${Math.min(share, 1) * 100}%` }} />
+        <div className="scroll-x">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>App</th>
+                <th>Status</th>
+                <th className="num">CPU</th>
+                <th style={{ width: '28%' }}>Memory of its limit</th>
+                <th className="num">Data</th>
+                <th className="num">Up</th>
+              </tr>
+            </thead>
+            <tbody>
+              {apps.map((a) => {
+                const running = a.state === 'running' || a.state === 'crashed'
+                const share = a.memoryMaxBytes ? a.memoryBytes / a.memoryMaxBytes : 0
+                return (
+                  <tr key={a.name} className="clickable" onClick={() => (window.location.hash = `/p/${encodeURIComponent(a.name)}`)}>
+                    <td>
+                      <a href={`#/p/${encodeURIComponent(a.name)}`}>{a.name}</a>
+                    </td>
+                    <td>
+                      <StatusBadge state={a.state} />
+                    </td>
+                    <td className="num">{running ? percent(a.cpuPercent) : '—'}</td>
+                    <td>
+                      {running ? (
+                        <div className="meter-cell">
+                          <div className={`progress ${share >= 0.9 ? 'high' : ''}`}>
+                            <div style={{ width: `${Math.min(share, 1) * 100}%` }} />
+                          </div>
+                          <span className="small-text muted">
+                            {formatBytes(a.memoryBytes)}
+                            {a.memoryMaxBytes ? ` of ${formatBytes(a.memoryMaxBytes)}` : ''}
+                          </span>
                         </div>
-                        <span className="small-text muted">
-                          {formatBytes(a.memoryBytes)}
-                          {a.memoryMaxBytes ? ` of ${formatBytes(a.memoryMaxBytes)}` : ''}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="muted">—</span>
-                    )}
-                  </td>
-                  <td className="num">{formatBytes(a.dataBytes)}</td>
-                  <td className="num">{running ? uptime(a.startedAt) : '—'}</td>
-                </tr>
-              )
-            })}
-            <tr className="table-foot">
-              <td>Sideyard</td>
-              <td className="muted">{sys.sideyard.version}</td>
-              <td className="num">{sys.now.memTotalBytes ? percent(sys.sideyard.cpuPercent) : '—'}</td>
-              <td className="muted small-text">{sys.sideyard.memoryBytes ? formatBytes(sys.sideyard.memoryBytes) : '—'}</td>
-              <td className="num">—</td>
-              <td className="num">{uptime(sys.sideyard.startedAt)}</td>
-            </tr>
-          </tbody>
-        </table>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
+                    <td className="num">{formatBytes(a.dataBytes)}</td>
+                    <td className="num">{running ? uptime(a.startedAt) : '—'}</td>
+                  </tr>
+                )
+              })}
+              <tr className="table-foot">
+                <td>Sideyard</td>
+                <td className="muted">{sys.sideyard.version}</td>
+                <td className="num">{sys.now.memTotalBytes ? percent(sys.sideyard.cpuPercent) : '—'}</td>
+                <td className="muted small-text">{sys.sideyard.memoryBytes ? formatBytes(sys.sideyard.memoryBytes) : '—'}</td>
+                <td className="num">—</td>
+                <td className="num">{uptime(sys.sideyard.startedAt)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   )

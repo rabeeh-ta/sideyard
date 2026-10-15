@@ -10,8 +10,11 @@ export const rememberToken = (name: string, token: string) => sessionStorage.set
 const forgetToken = (name: string) => sessionStorage.removeItem(key(name))
 const recallToken = (name: string) => sessionStorage.getItem(key(name))
 
-/** How to connect a repo: GitHub secrets for CI, or a curl from a laptop. */
-export function DeploySetup({ name, onDone }: { name: string; onDone?: () => void }) {
+/**
+ * How to connect a repo: GitHub secrets for CI, or a curl from a laptop.
+ * With steps off, only the token part shows until a new token is made.
+ */
+export function DeploySetup({ name, onDone, steps = true }: { name: string; onDone?: () => void; steps?: boolean }) {
   const [token, setToken] = useState(() => recallToken(name))
   const [error, setError] = useState<string | null>(null)
   const url = window.location.origin
@@ -46,21 +49,7 @@ export function DeploySetup({ name, onDone }: { name: string; onDone?: () => voi
         </p>
       )}
       {error && <p className="error">{error}</p>}
-
-      <h4>Deploy from GitHub</h4>
-      <p className="muted">
-        In your app's repo (the starter template includes <code>.github/workflows/deploy.yml</code>), run:
-      </p>
-      <CodeBlock>{`gh secret set SIDEYARD_TOKEN --body "${shownToken}"
-gh variable set SIDEYARD_URL --body "${url}"
-gh variable set SIDEYARD_PROJECT --body "${name}"${arch !== 'amd64' ? `
-gh variable set SIDEYARD_ARCH --body "${arch}"` : ''}`}</CodeBlock>
-      <p className="muted">Then push to main. CI builds the binary and uploads it here.</p>
-
-      <h4>Or from your laptop</h4>
-      <CodeBlock>{`CGO_ENABLED=0 GOOS=linux GOARCH=${arch} go build -o app .
-curl --fail-with-body -H "Authorization: Bearer ${shownToken}" \\
-  -F binary=@app ${url}/api/projects/${name}/deploys`}</CodeBlock>
+      {(steps || token) && <DeploySteps name={name} url={url} arch={arch} token={shownToken} />}
 
       {token && onDone && (
         <button
@@ -74,6 +63,28 @@ curl --fail-with-body -H "Authorization: Bearer ${shownToken}" \\
         </button>
       )}
     </div>
+  )
+}
+
+function DeploySteps({ name, url, arch, token }: { name: string; url: string; arch: string; token: string }) {
+  return (
+    <>
+      <h4>Deploy from GitHub</h4>
+      <p className="muted">
+        In the app's repo (the starter template includes <code>.github/workflows/deploy.yml</code>), run this, then push to
+        main:
+      </p>
+      <CodeBlock>{`gh secret set SIDEYARD_TOKEN --body "${token}"
+gh variable set SIDEYARD_URL --body "${url}"
+gh variable set SIDEYARD_PROJECT --body "${name}"${arch !== 'amd64' ? `
+gh variable set SIDEYARD_ARCH --body "${arch}"` : ''}`}</CodeBlock>
+
+      <h4>Or from your laptop</h4>
+      <CodeBlock>{`CGO_ENABLED=0 GOOS=linux GOARCH=${arch} go build -o app .
+curl --fail-with-body -H "Authorization: Bearer ${token}" \\
+  -F binary=@app -F commit=$(git rev-parse --short HEAD) --form-string "message=$(git log -1 --format=%s)" \\
+  ${url}/api/projects/${name}/deploys`}</CodeBlock>
+    </>
   )
 }
 

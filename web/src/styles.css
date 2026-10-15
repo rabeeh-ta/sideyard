@@ -705,6 +705,13 @@ input[type='checkbox'] {
 }
 
 .release-log,
+.run-hint {
+  margin: 0;
+  padding: 0 18px 10px;
+  background: var(--code-bg);
+  border-bottom: 1px solid var(--border);
+}
+
 .run-output {
   margin: 0;
   padding: 10px 18px 12px;
@@ -1023,7 +1030,7 @@ h1 .badge {
   flex: 1;
 }
 
-.search svg {
+.search > svg {
   position: absolute;
   left: 9px;
   top: 50%;
@@ -1045,9 +1052,27 @@ h1 .badge {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   padding: 8px 14px;
   border-bottom: 1px solid var(--border);
   font-size: 12.5px;
+}
+
+.logs-head .search {
+  max-width: 320px;
+}
+
+.logs-head .search .icon {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.logs mark {
+  background: color-mix(in srgb, var(--amber) 40%, transparent);
+  color: inherit;
+  border-radius: 2px;
 }
 
 .logs pre {
@@ -1088,6 +1113,15 @@ h1 .badge {
   position: absolute;
   top: 7px;
   right: 7px;
+}
+
+/* SQL quoted back in a dialog: wrap it rather than scroll sideways */
+.codeblock.wrap pre {
+  padding-right: 14px;
+  max-height: 180px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .notice {
@@ -1207,6 +1241,16 @@ h1 .badge {
   font-size: 12px;
 }
 
+/* a long check result wraps instead of pushing the page wider */
+.domain-status .badge {
+  white-space: normal;
+  border-radius: 10px;
+}
+
+.kv-row.domain > div:first-child {
+  min-width: 0;
+}
+
 .table-wrap {
   overflow: auto;
   max-height: 60vh;
@@ -1236,6 +1280,10 @@ h1 .badge {
   z-index: 51;
   display: flex;
   flex-direction: column;
+}
+
+.drawer.wide {
+  width: min(760px, 100vw);
 }
 
 .drawer-head {
@@ -1505,6 +1553,32 @@ table.struct td {
   vertical-align: middle;
 }
 
+/* New table's column list: the name gets the room, the checkboxes the least */
+table.coldefs th,
+table.coldefs td {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+table.coldefs .type {
+  width: 130px;
+}
+
+table.coldefs .default {
+  width: 170px;
+}
+
+table.coldefs .check {
+  width: 1%;
+  text-align: center;
+  white-space: nowrap;
+}
+
+table.coldefs input:not([type='checkbox']) {
+  width: 100%;
+  min-width: 0;
+}
+
 /* the data grid */
 
 .grid-wrap {
@@ -1674,6 +1748,49 @@ table.struct td {
   margin: 0;
 }
 
+@media (max-width: 640px) {
+  /* rows that are columns on a desk stack on a phone */
+  .page-head {
+    flex-wrap: wrap;
+  }
+  .job-row {
+    grid-template-columns: 1fr auto;
+    gap: 6px 12px;
+  }
+  .job-row .row-actions {
+    grid-column: 1 / -1;
+  }
+  .run-row {
+    grid-template-columns: auto auto 1fr auto;
+  }
+  .run-row > :nth-child(3),
+  .run-row > :nth-child(4) {
+    display: none;
+  }
+  .release-row {
+    grid-template-columns: 36px auto 1fr auto;
+  }
+  .release-row > :nth-child(4),
+  .release-row > :nth-child(5) {
+    display: none;
+  }
+  .kv-row {
+    grid-template-columns: 1fr auto;
+    gap: 6px 12px;
+  }
+  .kv-row > .kv-value {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .kv-row > .kv-value + span {
+    display: none;
+  }
+  .kv-row.builtin {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
 @media (max-width: 860px) {
   .usage {
     display: none;
@@ -1792,6 +1909,11 @@ html[data-theme='light'] {
 .stacked > div {
   height: 100%;
   min-width: 2px;
+}
+
+/* a wide table scrolls inside its card instead of widening the page */
+.scroll-x {
+  overflow-x: auto;
 }
 
 table.table {
@@ -2067,6 +2189,7 @@ input[type='file']::file-selector-button:hover {
   z-index: 2;
   display: flex;
   gap: 4px;
+  overflow-x: auto;
   padding: 8px 0;
   margin-bottom: 12px;
   background: var(--bg);
@@ -2074,6 +2197,7 @@ input[type='file']::file-selector-button:hover {
 }
 
 .subnav a {
+  flex: none;
   padding: 4px 10px;
   border-radius: var(--radius);
   color: var(--text-2);
@@ -2102,4 +2226,25 @@ table.table a {
 
 table.table a:hover {
   color: var(--brand);
+}
+
+/* after the update card's and the logs' own rules, so these win on a phone */
+@media (max-width: 640px) {
+  .logs-head {
+    flex-wrap: wrap;
+  }
+  .logs-head .search {
+    flex-basis: 100%;
+    max-width: none;
+  }
+  .update-box {
+    grid-template-columns: 1fr;
+  }
+  .update-version {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .update-available {
+    flex-wrap: wrap;
+  }
 }

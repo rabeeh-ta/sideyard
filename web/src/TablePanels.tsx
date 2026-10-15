@@ -158,6 +158,7 @@ export function CreateTablePanel({
   return (
     <Drawer
       title="Create a new table"
+      wide
       onClose={onClose}
       footer={
         <>
@@ -176,15 +177,19 @@ export function CreateTablePanel({
       </label>
       <div className="field">
         <span>Columns</span>
-        <table className="struct">
+        <table className="struct coldefs">
           <thead>
             <tr>
               <th>Name</th>
-              <th>Type</th>
-              <th>Default</th>
-              <th title="Primary key">Key</th>
-              <th title="Not null">Required</th>
-              <th>Unique</th>
+              <th className="type">Type</th>
+              <th className="default">Default</th>
+              <th className="check" title="Primary key">
+                Key
+              </th>
+              <th className="check" title="Not null">
+                Required
+              </th>
+              <th className="check">Unique</th>
               <th />
             </tr>
           </thead>
@@ -194,23 +199,23 @@ export function CreateTablePanel({
                 <td>
                   <input value={c.name} onChange={(e) => update(i, { name: e.target.value })} spellCheck={false} />
                 </td>
-                <td style={{ width: 120 }}>
+                <td>
                   <input list="sqlite-types" value={c.type} onChange={(e) => update(i, { type: e.target.value })} />
                 </td>
-                <td style={{ width: 150 }}>
+                <td>
                   <input
                     value={c.default ?? ''}
                     placeholder="none"
                     onChange={(e) => update(i, { default: e.target.value === '' ? null : e.target.value })}
                   />
                 </td>
-                <td>
+                <td className="check">
                   <input type="checkbox" checked={!!c.pk} onChange={(e) => update(i, { pk: e.target.checked })} />
                 </td>
-                <td>
+                <td className="check">
                   <input type="checkbox" checked={!!c.notNull} onChange={(e) => update(i, { notNull: e.target.checked })} />
                 </td>
-                <td>
+                <td className="check">
                   <input type="checkbox" checked={!!c.unique} onChange={(e) => update(i, { unique: e.target.checked })} />
                 </td>
                 <td>

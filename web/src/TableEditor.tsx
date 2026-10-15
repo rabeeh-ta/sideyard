@@ -69,7 +69,11 @@ type Panel =
 export function TableEditor({ name, table }: { name: string; table?: string }) {
   const db = useDatabase(name)
   const [schemaVersion, setSchemaVersion] = useState(0)
-  const { data: schema, error: schemaError } = usePoll(
+  const {
+    data: schema,
+    error: schemaError,
+    reload: refreshCounts,
+  } = usePoll(
     () => (db.path ? api.schema(name, db.path) : Promise.resolve([] as TableInfo[])),
     0,
     `${name}:${db.path}:${schemaVersion}`,
@@ -140,6 +144,7 @@ export function TableEditor({ name, table }: { name: string; table?: string }) {
             panel={panel}
             setPanel={setPanel}
             onSchemaChange={reloadSchema}
+            onRowsChange={refreshCounts}
             onRenamed={(t) => {
               reloadSchema()
               open(t)
@@ -185,6 +190,7 @@ function TableView({
   panel,
   setPanel,
   onSchemaChange,
+  onRowsChange: onCountChange,
   onRenamed,
   onDropped,
 }: {
@@ -194,6 +200,7 @@ function TableView({
   panel: Panel
   setPanel: (p: Panel) => void
   onSchemaChange: () => void
+  onRowsChange: () => void // rows were added or deleted: the table list's counts are stale
   onRenamed: (table: string) => void
   onDropped: () => void
 }) {
@@ -232,16 +239,17 @@ function TableView({
   }, [load])
 
   const editable = !!data?.editable
-  // Widths are measured from the first page, then left alone so a resize
-  // survives refreshes.
-  const [widths, setWidths] = useState<Record<string, number> | null>(null)
+  // Widths are measured from the first page that has rows, then left alone
+  // so a resize survives refreshes.
+  const [widths, setWidths] = useState<{ cols: Record<string, number>; fromRows: boolean } | null>(null)
   useEffect(() => {
-    if (!widths && data) {
-      setWidths(
-        Object.fromEntries(
+    if (data && (!widths || (!widths.fromRows && data.rows.length > 0))) {
+      setWidths({
+        cols: Object.fromEntries(
           info.columns.map((c, j) => [c.name, columnWidth(`${c.name} ${c.type}`, data.rows.map((r) => r[j]))]),
         ),
-      )
+        fromRows: data.rows.length > 0,
+      })
     }
   }, [data, widths, info.columns])
   const rows: GridRow[] = useMemo(
@@ -261,7 +269,7 @@ function TableView({
       resizable: true,
       sortable: true,
       minWidth: 80,
-      width: widths?.[c.name] ?? 140,
+      width: widths?.cols[c.name] ?? 140,
       editable: (row) => editable && !c.generated && !isBlob(row[c.name]),
       renderHeaderCell: (p) => <ColumnHeader col={c} sortDirection={p.sortDirection} />,
       renderCell: (p) => <CellView value={p.row[c.name]} />,
@@ -292,6 +300,7 @@ function TableView({
     await fn()
     setPanel(null)
     if (schema) onSchemaChange()
+    else onCountChange()
     load()
   }
 

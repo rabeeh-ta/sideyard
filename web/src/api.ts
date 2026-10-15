@@ -251,7 +251,7 @@ export type DomainStatus = {
   addresses: string[]
   pointsHere: boolean | null
   dnsError?: string
-  certificate: { issuer: string; notAfter: string } | null
+  certificate: { issuer: string; notBefore: string; notAfter: string } | null
 }
 
 export type EmailLog = {
@@ -355,7 +355,8 @@ export const api = {
   stop: (name: string) => request<void>('POST', `${p(name)}/stop`),
   rollback: (name: string, number: number) =>
     request<{ release: Release }>('POST', `${p(name)}/releases/${number}/activate`),
-  logs: (name: string, lines = 500) => request<{ lines: string[] }>('GET', `${p(name)}/logs?lines=${lines}`),
+  logs: (name: string, lines = 500, q = '') =>
+    request<{ lines: string[] }>('GET', `${p(name)}/logs?lines=${lines}${q ? `&q=${encodeURIComponent(q)}` : ''}`),
 
   variables: (name: string) =>
     request<{ builtins: Builtin[]; variables: { key: string; updatedAt: string }[] }>('GET', `${p(name)}/variables`),

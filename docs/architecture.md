@@ -44,7 +44,7 @@ Each release runs with a constructed environment; Sideyard's own environment is 
 - `MemoryMax` (512 MB by default) and an optional `CPUQuota`, set per project in Settings.
 - `Restart=on-failure` every 3 seconds.
 - The environment in a root-only `EnvironmentFile`, never as unit properties, which any local user can read over D-Bus.
-- Output in journald, tagged `SIDEYARD_INSTANCE`, `SIDEYARD_PROJECT_ID` and `SIDEYARD_RELEASE`; the Logs tab matches the instance too, since project IDs repeat across installations on one machine.
+- Output in journald, tagged `SIDEYARD_INSTANCE`, `SIDEYARD_PROJECT_ID` and `SIDEYARD_RELEASE`; the Logs tab matches the instance too, since project IDs repeat across installations on one machine. Its search runs in journald (`journalctl --grep`, as a literal, ignoring case), so it covers the whole journal rather than the lines on screen; under the process runner it reads `app.log` and its rotated copy.
 
 Sideyard records each project's live unit and port in its database. On boot it reattaches to units that are still running, starts the rest, and stops any of its own units it doesn't recognise (left over from a crash mid-deploy). `<instance>` is a short random ID created on first boot and kept in `sideyard.db`, so two Sideyards on one machine (a test next to a real one, say) never touch each other's apps or users. In dev mode, and on hosts without systemd, the process runner runs apps as child processes of Sideyard instead, logging to `logs/app.log`, without limits.
 

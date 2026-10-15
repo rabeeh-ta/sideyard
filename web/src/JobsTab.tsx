@@ -16,6 +16,7 @@ export function JobsTab({ name }: { name: string }) {
   const { data: jobs, error, reload } = usePoll(() => api.jobs(name), 5000, name)
   const [editing, setEditing] = useState<Job | 'new' | null>(null)
   const [history, setHistory] = useState<string | null>(null)
+  const [howTo, setHowTo] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
 
   async function act(fn: () => Promise<unknown>) {
@@ -47,8 +48,8 @@ export function JobsTab({ name }: { name: string }) {
 
       <div className="page-head" style={{ marginBottom: 10 }}>
         <span className="muted">
-          Sideyard calls <code>POST /_jobs/&lt;name&gt;</code> on the app on schedule (times are UTC unless the schedule
-          starts with <code>CRON_TZ=…</code>).
+          Each job is a <code>POST /_jobs/&lt;name&gt;</code> to the app. Times are UTC unless the schedule starts with{' '}
+          <code>CRON_TZ=</code>.
         </span>
         <button className="primary" onClick={() => setEditing('new')}>
           New job
@@ -108,7 +109,15 @@ export function JobsTab({ name }: { name: string }) {
           ))}
         </div>
       )}
-      {jobs && jobs.length > 0 && <HowTo />}
+      {jobs &&
+        jobs.length > 0 &&
+        (howTo ? (
+          <HowTo />
+        ) : (
+          <button className="link-button small-text" onClick={() => setHowTo(true)}>
+            How does the app handle a job?
+          </button>
+        ))}
     </>
   )
 }
@@ -280,6 +289,11 @@ function Runs({ name, job }: { name: string; job: string }) {
             </div>
           </div>
           {open === r.id && <pre className="run-output">{r.output}</pre>}
+          {open === r.id && r.httpStatus === 404 && (
+            <p className="muted small-text run-hint">
+              The app has no <code>POST /_jobs/{job}</code> route, or it isn't deployed yet.
+            </p>
+          )}
         </div>
       ))}
     </div>
@@ -290,7 +304,7 @@ function HowTo() {
   return (
     <Section
       title="Handling a job in your app"
-      description="Only Sideyard can call these routes: the proxy hides /_jobs/ from the internet, and every call carries the app's SIDEYARD_TOKEN. A 2xx response marks the run as succeeded; the response body is kept as its output."
+      description="Only Sideyard reaches /_jobs/, and each call carries the app's SIDEYARD_TOKEN. A 2xx marks the run succeeded; the body becomes its output."
     >
       <CodeBlock>{`mux.HandleFunc("POST /_jobs/daily-report", func(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Authorization") != "Bearer "+os.Getenv("SIDEYARD_TOKEN") {

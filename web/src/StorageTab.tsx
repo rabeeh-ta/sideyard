@@ -68,9 +68,8 @@ function ConnectForm({
       title={info.connected ? 'Edit bucket' : 'Connect a bucket'}
       description={
         <>
-          Any S3-compatible storage works: Cloudflare R2, Backblaze B2, AWS S3, MinIO. Create a bucket for this project and
-          an access key that can reach <strong>only that bucket</strong>, so the provider keeps projects apart. The app gets
-          the details as variables and restarts with no downtime.
+          Any S3-compatible bucket (R2, B2, AWS S3, MinIO), with an access key that can reach <strong>only that bucket</strong>.
+          The app gets the details as variables.
         </>
       }
     >

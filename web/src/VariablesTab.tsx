@@ -46,11 +46,7 @@ export function VariablesTab({ name }: { name: string }) {
       {error && <p className="error">{error}</p>}
       {status && <p className={status.ok ? 'success' : 'error'}>{status.message}</p>}
 
-      <Section
-        title="Your variables"
-        description="Encrypted at rest and injected into the app's environment. Saving restarts the app with no downtime."
-      >
-        {data && data.variables.length === 0 && <p className="muted">None yet.</p>}
+      <Section title="Your variables" description="Stored encrypted and passed to the app. Saving restarts it without downtime.">
         {data && data.variables.length > 0 && (
           <div className="kv">
             {data.variables.map((v) => (
@@ -77,13 +73,11 @@ export function VariablesTab({ name }: { name: string }) {
             ))}
           </div>
         )}
-      </Section>
-
-      <Section title="Add or update" description="Paste KEY=value lines, as in a .env file.">
         <textarea
-          rows={5}
+          rows={4}
           spellCheck={false}
-          placeholder={'STRIPE_SECRET_KEY=sk_live_...\nOPENAI_API_KEY=sk-...'}
+          aria-label="Variables to add or update, as KEY=value lines"
+          placeholder={'Add or update: paste KEY=value lines, as in a .env file\nSTRIPE_SECRET_KEY=sk_live_...'}
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
@@ -92,7 +86,7 @@ export function VariablesTab({ name }: { name: string }) {
         </button>
       </Section>
 
-      <Section title="Built in" description="Set by Sideyard for every app. These can't be overridden.">
+      <Section title="Built in" description="Set by Sideyard for every app; they can't be overridden.">
         <div className="kv">
           {data?.builtins.map((b) => (
             <div key={b.key} className="kv-row builtin">

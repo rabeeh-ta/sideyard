@@ -198,7 +198,7 @@ func (s *Server) logs(w http.ResponseWriter, r *http.Request) {
 	if lines <= 0 || lines > 5000 {
 		lines = 500
 	}
-	out, err := s.p.Logs(r.PathValue("name"), lines)
+	out, err := s.p.Logs(r.PathValue("name"), lines, strings.TrimSpace(r.URL.Query().Get("q")))
 	if err != nil {
 		writeErr(w, err)
 		return

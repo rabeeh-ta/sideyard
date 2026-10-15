@@ -110,7 +110,7 @@ export function DatabaseTab({ name, onChange }: { name: string; onChange: () => 
       <div ref={importRef}>
         <Section
           title="Import"
-          description="Replaces the file at this path, or creates it. A running app stops for a few seconds while the file is swapped, then starts again. The current file is kept as a backup, and if the app fails its health check with the new one, the old one is put back."
+          description="Replaces the file at this path, or creates it. The app pauses for a few seconds; the old file is kept as a backup, and put back if the app fails its health check."
         >
           <div className="stack">
             <label className="field">

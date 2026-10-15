@@ -531,10 +531,20 @@ func TestTableEditor(t *testing.T) {
 	}
 
 	// Edits from the dashboard are logged.
-	logs, _ := p.Logs("demo", 100)
+	logs, _ := p.Logs("demo", 100, "")
 	if joined := strings.Join(logs, "\n"); !strings.Contains(joined, "table editor: updated 1 row(s) in users") ||
 		!strings.Contains(joined, "SQL editor ran a write") {
 		t.Errorf("edits weren't logged:\n%s", joined)
+	}
+	// A search returns only the lines that match, ignoring case.
+	found, err := p.Logs("demo", 100, "SQL EDITOR")
+	if err != nil || len(found) == 0 {
+		t.Fatalf("searching the logs: %q, %v", found, err)
+	}
+	for _, line := range found {
+		if !strings.Contains(strings.ToLower(line), "sql editor") {
+			t.Errorf("search returned a line without the match: %q", line)
+		}
 	}
 	e.expect("demo", 200, "release 1") // the app kept running throughout
 	if _, err := p.ExecSQL(ctx, "demo", "../../sideyard.db", "SELECT 1", false); err == nil {
@@ -573,7 +583,7 @@ func TestMonitoring(t *testing.T) {
 	if h := p.Status(proj).Health; h.Status != "healthy" {
 		t.Fatalf("health after fixing: %+v", h)
 	}
-	logs, _ := p.Logs("demo", 100)
+	logs, _ := p.Logs("demo", 100, "")
 	if joined := strings.Join(logs, "\n"); !strings.Contains(joined, "health check failing") || !strings.Contains(joined, "passing again") {
 		t.Errorf("health changes weren't logged:\n%s", joined)
 	}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { errorMessage, type ServerInfo } from './api'
+import { errorMessage } from './api'
 
 /** Runs fn now and every ms milliseconds; reload() re-runs it on demand. */
 export function usePoll<T>(fn: () => Promise<T>, ms: number, key: string) {
@@ -90,10 +90,14 @@ export function parseEnv(text: string): Record<string, string> {
 }
 
 /** The public URL of a host: HTTPS in production, the dev listener's port in dev mode. */
-export function appURL(host: string, server: ServerInfo | null): string {
-  if (!server?.dev) return `https://${host}`
-  const port = server.publicAddr.split(':').pop()
-  return `http://${host}${port && port !== '80' ? `:${port}` : ''}`
+/**
+ * An app's address. Apps are served by the same proxy as this dashboard, so
+ * they're reached the way the dashboard was: https on a server, the dev
+ * port locally, the forwarded port through a tunnel.
+ */
+export function appURL(host: string): string {
+  const { protocol, port } = window.location
+  return `${protocol}//${host}${port ? `:${port}` : ''}`
 }
 
 export function timeUntil(iso?: string): string {

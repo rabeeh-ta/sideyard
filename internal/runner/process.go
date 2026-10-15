@@ -64,10 +64,13 @@ func (r *Process) Logf(p ProjectRef, format string, args ...any) {
 	}
 }
 
-func (r *Process) Tail(p ProjectRef, n int) ([]string, error) {
+func (r *Process) Tail(p ProjectRef, n int, match string) ([]string, error) {
 	l, err := r.log(p)
 	if err != nil {
 		return nil, err
+	}
+	if match != "" {
+		return l.Search(n, match)
 	}
 	return l.Tail(n)
 }

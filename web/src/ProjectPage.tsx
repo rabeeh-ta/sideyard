@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import { Database, Play, ScrollText, SquareTerminal, Table2 } from 'lucide-react'
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Database, Play, ScrollText, Search, SquareTerminal, Table2, X } from 'lucide-react'
 import { api, errorMessage, type Project } from './api'
 import { useServer } from './App'
 import { DeploySetup, hasRememberedToken } from './DeploySetup'
@@ -114,7 +114,7 @@ function Overview({ project, onChange }: { project: Project; onChange: () => voi
         description={
           <span className="domains" style={{ marginTop: 0 }}>
             {project.domains.map((d) => (
-              <a key={d} href={appURL(d, server)} target="_blank" rel="noreferrer">
+              <a key={d} href={appURL(d)} target="_blank" rel="noreferrer">
                 {d} ↗
               </a>
             ))}
@@ -327,7 +327,13 @@ export function DeploymentsTab({ project, onChange }: { project: Project; onChan
 export function LogsTab({ name }: { name: string }) {
   const server = useServer()
   const [live, setLive] = useState(true)
-  const { data, error } = usePoll(() => api.logs(name, 1000), live ? 2000 : 0, `${name}:${live}`)
+  const [search, setSearch] = useState('')
+  const [query, setQuery] = useState('') // search, once typing pauses
+  useEffect(() => {
+    const t = setTimeout(() => setQuery(search.trim()), 300)
+    return () => clearTimeout(t)
+  }, [search])
+  const { data, error } = usePoll(() => api.logs(name, 1000, query), live ? 2000 : 0, `${name}:${live}:${query}`)
   const ref = useRef<HTMLPreElement>(null)
   const stick = useRef(true)
 
@@ -336,11 +342,24 @@ export function LogsTab({ name }: { name: string }) {
     if (el && stick.current) el.scrollTop = el.scrollHeight
   }, [data])
 
+  const source = server?.runner === 'systemd' ? 'journald' : 'app.log'
+  const found = data?.lines.length ?? 0
   return (
     <div className="card logs">
       <div className="logs-head">
-        <span className="muted">
-          {server?.runner === 'systemd' ? 'From journald' : 'From app.log'} · newest at the bottom
+        <div className="search">
+          <Search size={14} />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search all logs" />
+          {search && (
+            <button className="icon" onClick={() => setSearch('')} aria-label="Clear search">
+              <X size={13} />
+            </button>
+          )}
+        </div>
+        <span className="muted grow small-text">
+          {query && data
+            ? `${found === 1000 ? 'The newest 1000' : found} matching line${found === 1 ? '' : 's'} in ${source}`
+            : `From ${source} · newest at the bottom`}
         </span>
         <label className="toggle">
           <input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} /> Live
@@ -357,11 +376,27 @@ export function LogsTab({ name }: { name: string }) {
         {data?.lines.length
           ? data.lines.map((line, i) => (
               <div key={i} className={line.includes('[sideyard]') ? 'log-sideyard' : undefined}>
-                {line}
+                {query ? <Highlight text={line} match={query} /> : line}
               </div>
             ))
-          : 'No output yet.'}
+          : query
+            ? 'No lines match.'
+            : 'No output yet.'}
       </pre>
     </div>
   )
+}
+
+/** text with each case-insensitive occurrence of match marked. */
+function Highlight({ text, match }: { text: string; match: string }) {
+  const parts: ReactNode[] = []
+  const lower = text.toLowerCase()
+  const m = match.toLowerCase()
+  let at = 0
+  for (let i = lower.indexOf(m); i >= 0 && m; i = lower.indexOf(m, at)) {
+    parts.push(text.slice(at, i), <mark key={i}>{text.slice(i, i + m.length)}</mark>)
+    at = i + m.length
+  }
+  parts.push(text.slice(at))
+  return <>{parts}</>
 }

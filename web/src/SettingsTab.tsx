@@ -11,7 +11,7 @@ export function SettingsTab({ project, onChange }: { project: Project; onChange:
       <DomainsSection project={project} onChange={onChange} />
       <RuntimeSection project={project} onChange={onChange} />
       <Section title="Deploy token" description="CI uses this token to upload releases.">
-        <DeploySetup name={project.name} />
+        <DeploySetup name={project.name} steps={false} />
       </Section>
       <DeleteSection name={project.name} />
     </>
@@ -43,7 +43,7 @@ function DomainsSection({ project, onChange }: { project: Project; onChange: () 
       description={
         server?.dev
           ? 'Dev mode: *.localhost names resolve to this machine in most browsers.'
-          : 'Point an A record for each domain at this server. HTTPS certificates are issued automatically.'
+          : 'Point an A record for each domain at this server; HTTPS is set up automatically.'
       }
     >
       <div className="kv">
@@ -124,17 +124,13 @@ function RuntimeSection({ project, onChange }: { project: Project; onChange: () 
             spellCheck={false}
           />
           <small className="muted">
-            Passed to your binary; <code>$PORT</code> and <code>$DATA_DIR</code> are expanded. For PocketBase:{' '}
-            <code>serve --http=127.0.0.1:$PORT --dir=$DATA_DIR/pb_data</code>. Changing them restarts the app.
+            Passed to your binary, with <code>$PORT</code> and <code>$DATA_DIR</code> expanded.
           </small>
         </label>
         <label className="field">
           <span>Health check path</span>
           <input value={healthPath} onChange={(e) => setHealthPath(e.target.value)} spellCheck={false} />
-          <small className="muted">
-            A deploy goes live only after this path answers with a 2xx or 3xx. PocketBase uses{' '}
-            <code>/api/health</code>.
-          </small>
+          <small className="muted">A deploy goes live once this path answers with a 2xx or 3xx.</small>
         </label>
         <div className="limits">
           <label className="field">
@@ -147,10 +143,8 @@ function RuntimeSection({ project, onChange }: { project: Project; onChange: () 
           </label>
         </div>
         <small className="muted limits-help">
-          0 means no limit; 100% is one full core. An app that goes over its memory limit is restarted.{' '}
-          {server?.runner === 'process'
-            ? 'This server runs apps as plain processes, so limits are saved but not enforced (they are on Linux with systemd).'
-            : 'Changing a limit restarts the app with no downtime.'}
+          0 means no limit; 100% is one core. Saving restarts the app without downtime.
+          {server?.runner === 'process' && ' Limits are enforced only by the systemd runner, not on this server.'}
         </small>
         <div>
           <button className="primary" disabled={busy || !dirty}>
@@ -195,9 +189,11 @@ function DeleteSection({ name }: { name: string }) {
 /** Whether a domain resolves to this server and has a certificate. */
 function DomainChecks({ status, dev }: { status?: DomainStatus; dev: boolean }) {
   if (!status) return null
-  const daysLeft = status.certificate
-    ? Math.floor((new Date(status.certificate.notAfter).getTime() - Date.now()) / 86400000)
-    : 0
+  const cert = status.certificate
+  // Caddy renews with a third of a certificate's lifetime left (30 of 90
+  // days, 4 of 12 hours for its own CA); a quarter left means it's late.
+  const left = cert ? new Date(cert.notAfter).getTime() - Date.now() : 0
+  const late = cert ? left < (new Date(cert.notAfter).getTime() - new Date(cert.notBefore).getTime()) / 4 : false
   return (
     <div className="domain-status" style={{ marginTop: 6 }}>
       {status.dnsError ? (
@@ -211,13 +207,20 @@ function DomainChecks({ status, dev }: { status?: DomainStatus; dev: boolean }) 
       )}
       {dev ? (
         <Pill tone="grey">dev mode: plain HTTP</Pill>
-      ) : status.certificate ? (
-        <Pill tone={daysLeft < 14 ? 'amber' : 'green'}>
-          HTTPS by {status.certificate.issuer}, renews automatically ({daysLeft} days left)
+      ) : cert ? (
+        <Pill tone={late ? 'amber' : 'green'}>
+          HTTPS by {cert.issuer} · {late ? `expires in ${duration(left)}, renewal is late` : 'renews automatically'}
         </Pill>
       ) : (
         <Pill tone="amber">no certificate yet: issued on the first visit once DNS points here</Pill>
       )}
     </div>
   )
+}
+
+/** "3 hours", "64 days". */
+function duration(ms: number): string {
+  const hours = Math.max(0, Math.floor(ms / 3600000))
+  if (hours < 48) return hours === 1 ? '1 hour' : `${hours} hours`
+  return `${Math.floor(hours / 24)} days`
 }

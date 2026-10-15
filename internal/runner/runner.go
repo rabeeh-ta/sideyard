@@ -93,8 +93,9 @@ type Runner interface {
 	Sweep(keep map[string]bool)
 	// Logf writes a Sideyard event into the project's log.
 	Logf(p ProjectRef, format string, args ...any)
-	// Tail returns the project's newest n log lines, oldest first.
-	Tail(p ProjectRef, n int) ([]string, error)
+	// Tail returns the project's newest n log lines, oldest first; with a
+	// match, only lines containing it (ignoring case), searched further back.
+	Tail(p ProjectRef, n int, match string) ([]string, error)
 	// Credential is how to run a helper command as the project's user, or
 	// nil to run it as Sideyard.
 	Credential(p ProjectRef) (*syscall.Credential, error)

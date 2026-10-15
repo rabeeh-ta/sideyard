@@ -125,17 +125,19 @@ export function Drawer({
   onClose,
   children,
   footer,
+  wide,
 }: {
   title: ReactNode
   onClose: () => void
   children: ReactNode
   footer?: ReactNode
+  wide?: boolean
 }) {
   useEscape(onClose)
   return (
     <>
       <div className="overlay" onClick={onClose} />
-      <aside className="drawer" role="dialog" aria-modal="true">
+      <aside className={wide ? 'drawer wide' : 'drawer'} role="dialog" aria-modal="true">
         <div className="drawer-head">
           <h3>{title}</h3>
           <button className="icon" onClick={onClose} aria-label="Close">

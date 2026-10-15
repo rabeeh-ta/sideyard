@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -267,10 +268,20 @@ func (r *Systemd) Logf(p ProjectRef, format string, args ...any) {
 	})
 }
 
-func (r *Systemd) Tail(p ProjectRef, n int) ([]string, error) {
-	out, err := exec.Command("journalctl", "--no-pager", "--quiet", "--output=json", "-n", strconv.Itoa(n),
-		"--output-fields=MESSAGE,SIDEYARD_RELEASE,SYSLOG_IDENTIFIER",
-		"SIDEYARD_INSTANCE="+r.instance, "SIDEYARD_PROJECT_ID="+strconv.FormatInt(p.ID, 10)).Output()
+func (r *Systemd) Tail(p ProjectRef, n int, match string) ([]string, error) {
+	args := []string{"--no-pager", "--quiet", "--output=json", "-n", strconv.Itoa(n),
+		"--output-fields=MESSAGE,SIDEYARD_RELEASE,SYSLOG_IDENTIFIER"}
+	if match != "" {
+		// journald searches the whole journal itself; QuoteMeta makes the
+		// pattern (PCRE2) a literal.
+		args = append(args, "--grep="+regexp.QuoteMeta(match), "--case-sensitive=false")
+	}
+	args = append(args, "SIDEYARD_INSTANCE="+r.instance, "SIDEYARD_PROJECT_ID="+strconv.FormatInt(p.ID, 10))
+	out, err := exec.Command("journalctl", args...).Output()
+	var exit *exec.ExitError
+	if match != "" && errors.As(err, &exit) && exit.ExitCode() == 1 && len(out) == 0 {
+		return []string{}, nil // nothing matched
+	}
 	if err != nil {
 		return nil, fmt.Errorf("journalctl: %w", err)
 	}

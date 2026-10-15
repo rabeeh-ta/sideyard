@@ -12,7 +12,7 @@ type Query = { id: string; name: string; sql: string; updatedAt: number }
 
 const templates: Omit<Query, 'id' | 'updatedAt'>[] = [
   {
-    name: 'Tables and row counts',
+    name: 'Tables and views',
     sql: "SELECT name, type FROM sqlite_schema\nWHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%'\nORDER BY name;",
   },
   {
@@ -268,8 +268,8 @@ export function SqlEditor({ name }: { name: string }) {
             It runs against the live <code>{db.path}</code> that the app is using, and can't be undone here. Statements run in
             order; if one fails, the ones before it stay applied.
           </p>
-          <div className="codeblock">
-            <pre style={{ maxHeight: 180, overflow: 'auto', paddingRight: 14 }}>{confirm}</pre>
+          <div className="codeblock wrap">
+            <pre>{confirm}</pre>
           </div>
         </Dialog>
       )}

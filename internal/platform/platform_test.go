@@ -196,7 +196,7 @@ func runLifecycle(e *testEnv, name string) {
 	// journald writes asynchronously, so give the log a moment.
 	var joined string
 	for range 20 {
-		logs, err := p.Logs(name, 300)
+		logs, err := p.Logs(name, 300, "")
 		if err != nil {
 			e.Fatal(err)
 		}
@@ -420,8 +420,8 @@ func TestSystemdRunner(t *testing.T) {
 	strangerRef := runner.ProjectRef{ID: dbProj.ID, Name: dbProj.Name}
 	stranger.Logf(strangerRef, "from another installation")
 	for i := 0; ; i++ {
-		theirs, _ := stranger.Tail(strangerRef, 10)
-		ours, _ := e.p.Logs("sytest-db", 300)
+		theirs, _ := stranger.Tail(strangerRef, 10, "")
+		ours, _ := e.p.Logs("sytest-db", 300, "")
 		if strings.Contains(strings.Join(ours, "\n"), "from another installation") {
 			t.Fatalf("another installation's log line shows up in ours:\n%s", strings.Join(ours, "\n"))
 		}

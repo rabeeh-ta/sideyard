@@ -510,12 +510,14 @@ func (p *Platform) Status(proj store.Project) RuntimeStatus {
 	return rs
 }
 
-func (p *Platform) Logs(name string, lines int) ([]string, error) {
+// Logs returns a project's newest log lines; with a match, the newest lines
+// containing it.
+func (p *Platform) Logs(name string, lines int, match string) ([]string, error) {
 	proj, err := p.store.ProjectByName(name)
 	if err != nil {
 		return nil, err
 	}
-	return p.runner.Tail(p.ref(proj), lines)
+	return p.runner.Tail(p.ref(proj), lines, match)
 }
 
 // --- helpers ---

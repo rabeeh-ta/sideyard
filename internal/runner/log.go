@@ -2,6 +2,7 @@ package runner
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -103,6 +104,34 @@ func (l *Log) Tail(n int) ([]string, error) {
 		lines = lines[len(lines)-n:]
 	}
 	return lines, nil
+}
+
+// Search returns up to n of the most recent lines containing match,
+// ignoring case, from all of app.log and the rotated app.log.1.
+func (l *Log) Search(n int, match string) ([]string, error) {
+	match = strings.ToLower(match)
+	var found []string
+	for _, path := range []string{l.path + ".1", l.path} {
+		b, err := os.ReadFile(path)
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		for _, line := range strings.Split(string(b), "\n") {
+			if line != "" && strings.Contains(strings.ToLower(line), match) {
+				found = append(found, line)
+			}
+		}
+	}
+	if len(found) > n {
+		found = found[len(found)-n:]
+	}
+	if found == nil {
+		found = []string{}
+	}
+	return found, nil
 }
 
 // lineWriter turns a process's output stream into tagged log lines.
