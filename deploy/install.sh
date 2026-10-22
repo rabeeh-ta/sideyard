@@ -447,6 +447,7 @@ EOF
   say "  Logs        journalctl -u sideyard -f"
   say "  Updates     the dashboard offers them; or run this installer again"
   say "  Password    sudo sideyard reset-password (prints a new one)"
+  say "  Commands    sideyard help"
   say ""
 }
 

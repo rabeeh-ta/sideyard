@@ -214,7 +214,7 @@ func envFilePath(p ProjectRef, unit string) string {
 }
 
 func (r *Systemd) Adopt(p ProjectRef, id string) (Instance, bool) {
-	props, err := showUnit(id, "LoadState", "ActiveState")
+	props, err := ShowUnit(id, "LoadState", "ActiveState")
 	if err != nil || props["LoadState"] != "loaded" {
 		return nil, false
 	}
@@ -307,12 +307,12 @@ func (r *Systemd) unitPrefix() string {
 }
 
 func (r *Systemd) user(p ProjectRef) string {
-	return unixUser(r.instance, p)
+	return UnixUser(r.instance, p)
 }
 
-// unixUser is a project's user and group name, sy<instance>-<ID>-<name>,
+// UnixUser is a project's user and group name, sy<instance>-<ID>-<name>,
 // within the 32-character limit. The ID keeps truncated names unique.
-func unixUser(instance string, p ProjectRef) string {
+func UnixUser(instance string, p ProjectRef) string {
 	name := fmt.Sprintf("sy%s-%d-%s", instance, p.ID, p.Name)
 	if len(name) > 32 {
 		name = name[:32]
@@ -338,13 +338,17 @@ type unitInstance struct {
 func (u *unitInstance) ID() string { return u.unit }
 
 func (u *unitInstance) Status() Status {
-	props, err := showUnit(u.unit, "LoadState", "ActiveState", "SubState", "MainPID", "NRestarts",
+	props, err := ShowUnit(u.unit, "LoadState", "ActiveState", "SubState", "MainPID", "NRestarts",
 		"ExecMainStartTimestampMonotonic", "MemoryCurrent", "CPUUsageNSec")
 	if err != nil {
 		return Status{State: Stopped}
 	}
 	return statusFromProps(props, bootTime())
 }
+
+// UnitStatus is a release unit's state, for looking at an installation
+// from outside it (sideyard status).
+func UnitStatus(unit string) Status { return (&unitInstance{unit: unit}).Status() }
 
 func (u *unitInstance) Stop(timeout time.Duration) {
 	// systemd itself escalates to SIGKILL after the unit's TimeoutStopSec.
@@ -383,7 +387,8 @@ func statusFromProps(props map[string]string, boot time.Time) Status {
 	return st
 }
 
-func showUnit(unit string, props ...string) (map[string]string, error) {
+// ShowUnit reads a unit's properties from systemd.
+func ShowUnit(unit string, props ...string) (map[string]string, error) {
 	out, err := exec.Command("systemctl", "show", unit, "--property="+strings.Join(props, ",")).Output()
 	if err != nil {
 		return nil, err

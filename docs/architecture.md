@@ -108,7 +108,7 @@ Integrity rests on HTTPS to the source (plain http is refused except on loopback
 
 | Package | Role |
 |---|---|
-| `cmd/sideyard` | Entry point: serving (and `exec`ing into an update), `version`, `set-password`, `reset-password`, and the `sqlite-snapshot`/`sqlite-query` helpers |
+| `cmd/sideyard` | Entry point: serving (and `exec`ing into an update), `help`, `status`, `version`, `set-password`, `reset-password`, and the `sqlite-snapshot`/`sqlite-query` helpers |
 | `internal/update` | Finds releases at the update source and installs one over the running binary |
 | `internal/sysinfo` | Server and process figures from `/proc` and `/sys` |
 | `internal/version` | The build's version and release source, set at release time |

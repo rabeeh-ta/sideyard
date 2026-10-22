@@ -41,6 +41,8 @@ It finishes when the dashboard answers, and prints its address. The first visit 
 Sideyard runs as root. It creates a Unix user for each project (`sy<instance>-<id>-<name>`, where the instance is a short ID unique to this installation) and runs every release as its own systemd unit. Each unit runs as that user, with a memory limit (512 MB by default) and write access only to the project's data folder. Apps keep running when Sideyard restarts or updates.
 
 ```sh
+sudo sideyard status                   # what's running, and where Sideyard and each app keep their files
+sideyard help                          # the other commands
 systemctl list-units 'sy-*'            # one unit per running release
 journalctl -u sideyard -f              # Sideyard's own log
 journalctl SIDEYARD_PROJECT_ID=1 -f     # a project's log (the dashboard's Logs tab)

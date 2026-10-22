@@ -66,10 +66,10 @@ func TestRunArgs(t *testing.T) {
 }
 
 func TestUnixUser(t *testing.T) {
-	if got := unixUser("a3f9", ProjectRef{ID: 3, Name: "maker"}); got != "sya3f9-3-maker" {
+	if got := UnixUser("a3f9", ProjectRef{ID: 3, Name: "maker"}); got != "sya3f9-3-maker" {
 		t.Errorf("got %q", got)
 	}
-	long := unixUser("a3f9", ProjectRef{ID: 12, Name: strings.Repeat("a", 40)})
+	long := UnixUser("a3f9", ProjectRef{ID: 12, Name: strings.Repeat("a", 40)})
 	if len(long) != 32 || !strings.HasPrefix(long, "sya3f9-12-") {
 		t.Errorf("got %q (%d chars)", long, len(long))
 	}

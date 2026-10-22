@@ -64,7 +64,7 @@ func Load() (Config, error) {
 		c.Domain = "localhost"
 	}
 	if c.Domain == "" {
-		return c, errors.New("SIDEYARD_DOMAIN is required, e.g. SIDEYARD_DOMAIN=example.com")
+		return c, ErrNoDomain
 	}
 	c.DashboardHost = strings.ToLower(envOr("SIDEYARD_DASHBOARD_HOST", "sideyard."+c.Domain))
 
@@ -92,6 +92,8 @@ func DataDir() (string, error) {
 	}
 	return abs, nil
 }
+
+var ErrNoDomain = errors.New("SIDEYARD_DOMAIN is required, e.g. SIDEYARD_DOMAIN=example.com")
 
 var emailPattern = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
 
