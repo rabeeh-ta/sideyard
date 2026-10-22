@@ -9,7 +9,7 @@ Go backend, React + TypeScript frontend (Vite), SQLite for data. `web/dist` is e
 ## Runtime contract
 
 - Listen on `127.0.0.1:$PORT`. Sideyard's proxy owns the public domain and HTTPS.
-- Persistent files go in `$DATA_DIR`. The SQLite database is `$DATABASE_PATH`. Everything outside `$DATA_DIR` is replaced on each deploy.
+- Persistent files go in `$DATA_DIR`. The SQLite database is `$DATABASE_PATH`. Everything outside `$DATA_DIR` is replaced on each deploy, and on the server it's read-only apart from a private `/tmp`. Memory is capped too: 512 MB unless raised in the project's Settings.
 - `GET /healthz` answers 200 once the app can serve. A release goes live only after it passes, so check real dependencies there (the starter pings the database).
 - On SIGTERM, finish in-flight requests and exit within 10 seconds. `main.go` already does this.
 - Config and secrets arrive as environment variables set in the Sideyard dashboard. Read them with `os.Getenv` and keep them out of the repo.

@@ -1,0 +1,1458 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sideyard: every app one file, every app on one server</title>
+    <meta
+      name="description"
+      content="Sideyard is a self-hosted platform for Go + React + SQLite apps. Every app compiles into one binary, and one small server runs them all, with HTTPS, a database editor, backups, jobs, email and zero-downtime deploys built in."
+    />
+    <meta property="og:title" content="Sideyard: build every app as one file, run them all on one server" />
+    <meta property="og:description" content="Go + React + SQLite in a single binary. One server you own runs every side project." />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='6' height='6' rx='1.5' fill='%2322c17a'/%3E%3Crect x='9' y='1' width='6' height='6' rx='1.5' fill='%23ff4f4f'/%3E%3Crect x='1' y='9' width='6' height='6' rx='1.5' fill='%232f7bff'/%3E%3Crect x='9' y='9' width='6' height='6' rx='1.5' fill='%23ffc21a'/%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        --bg: #fff3e4;
+        --bg-2: #fbe9d3;
+        --card: #ffffff;
+        --ink: #2a211c;
+        --ink-2: #6b5d53;
+        --ink-3: #a3907f;
+        --line: #efdcc6;
+        --hole: var(--card);
+        --mark: #ffb8ee;
+        --mark-2: #a6f0c6;
+
+        --red: #ff4f4f;
+        --orange: #ff8a1f;
+        --yellow: #ffc21a;
+        --green: #22c17a;
+        --blue: #2f7bff;
+        --pink: #f48fe0;
+        --purple: #8b5cf6;
+        --on-color: #1d1712;
+
+        --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #121212;
+          --bg-2: #181818;
+          --card: #1c1c1c;
+          --ink: #ffffff;
+          --ink-2: #a8a8a8;
+          --ink-3: #6e6e6e;
+          --line: #2a2a2a;
+          --mark: #8f2f7c;
+          --mark-2: #12643f;
+          color-scheme: dark;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 80px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 17px/1.6 var(--sans);
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: inherit;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.85em;
+        background: var(--bg-2);
+        border-radius: 6px;
+        padding: 0.12em 0.4em;
+      }
+      :focus-visible {
+        outline: 3px solid var(--blue);
+        outline-offset: 2px;
+      }
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      @media (max-width: 640px) {
+        .wrap {
+          padding: 0 16px;
+        }
+      }
+      mark {
+        color: inherit;
+        background: linear-gradient(transparent 58%, var(--mark) 58%, var(--mark) 92%, transparent 92%);
+        padding: 0 0.06em;
+      }
+      mark.green {
+        background: linear-gradient(transparent 58%, var(--mark-2) 58%, var(--mark-2) 92%, transparent 92%);
+      }
+      .circled {
+        position: relative;
+        white-space: nowrap;
+      }
+      .circled svg {
+        position: absolute;
+        left: -8%;
+        top: -14%;
+        width: 116%;
+        height: 128%;
+        overflow: visible;
+        pointer-events: none;
+      }
+      .circled path {
+        fill: none;
+        stroke: var(--purple);
+        stroke-width: 3;
+        stroke-linecap: round;
+        vector-effect: non-scaling-stroke;
+      }
+      .ico {
+        width: 28px;
+        height: 28px;
+        flex-shrink: 0;
+      }
+
+      /* Header */
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: color-mix(in srgb, var(--bg) 82%, transparent);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+      }
+      header .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 68px;
+        gap: 16px;
+      }
+      .logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 20px;
+        letter-spacing: -0.02em;
+        text-decoration: none;
+      }
+      nav {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        font-weight: 600;
+        font-size: 15px;
+      }
+      nav a {
+        text-decoration: none;
+        color: var(--ink-2);
+      }
+      nav a:hover {
+        color: var(--ink);
+      }
+      @media (max-width: 720px) {
+        nav .wide {
+          display: none;
+        }
+        nav {
+          gap: 16px;
+        }
+      }
+
+      /* Buttons */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        height: 48px;
+        padding: 0 22px;
+        border-radius: 12px;
+        border: 0;
+        background: var(--card);
+        color: var(--ink);
+        font: 700 16px var(--sans);
+        text-decoration: none;
+        cursor: pointer;
+        white-space: nowrap;
+        box-shadow: inset 0 0 0 1.5px var(--line);
+        transition: transform 0.15s;
+      }
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+      .btn.primary {
+        background: var(--ink);
+        color: var(--bg);
+        box-shadow: 0 8px 22px -8px rgba(42, 33, 28, 0.55);
+      }
+      .btn.pink {
+        background: var(--pink);
+        color: var(--on-color);
+        box-shadow: none;
+      }
+      .btn.small {
+        height: 36px;
+        padding: 0 16px;
+        font-size: 14px;
+        border-radius: 10px;
+      }
+      nav .btn {
+        color: var(--bg);
+      }
+
+      /* Hero */
+      .hero {
+        text-align: center;
+        padding: 72px 0 0;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 14px 6px 8px;
+        border-radius: 999px;
+        background: var(--card);
+        box-shadow: inset 0 0 0 1.5px var(--line);
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--ink-2);
+        margin-bottom: 28px;
+      }
+      .dots {
+        display: inline-flex;
+        gap: 3px;
+      }
+      .dots i {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+      }
+      h1 {
+        font-size: clamp(42px, 7.6vw, 96px);
+        line-height: 1.02;
+        letter-spacing: -0.035em;
+        font-weight: 700;
+        margin: 0 auto 28px;
+        max-width: 12em;
+        text-wrap: balance;
+      }
+      .lede {
+        font-size: clamp(18px, 2.2vw, 21px);
+        color: var(--ink-2);
+        max-width: 36em;
+        margin: 0 auto 36px;
+        text-wrap: pretty;
+      }
+      .ctas {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      /* The yard: one server, many apps */
+      .yard {
+        margin: 64px auto 0;
+        max-width: 960px;
+        background: var(--card);
+        border-radius: 32px;
+        padding: 20px 28px 32px;
+        box-shadow:
+          inset 0 0 0 1.5px var(--line),
+          0 40px 80px -40px rgba(42, 33, 28, 0.35);
+        text-align: left;
+      }
+      .yard-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding-bottom: 20px;
+        margin-bottom: 24px;
+        border-bottom: 1.5px dashed var(--line);
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--ink-2);
+      }
+      .yard-bar b {
+        color: var(--ink);
+        font-weight: 700;
+      }
+      .live {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .live::before {
+        content: '';
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--green) 25%, transparent);
+      }
+      .apps {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 20px 16px;
+      }
+      .app {
+        text-align: center;
+        font: 500 13px var(--mono);
+        color: var(--ink-2);
+      }
+      .app .tile {
+        --hole: var(--c);
+        background: var(--c);
+        aspect-ratio: 1;
+        border-radius: 22px;
+        display: grid;
+        place-items: center;
+        margin-bottom: 8px;
+        color: var(--on-color);
+      }
+      .app .tile svg {
+        width: 42%;
+        height: 42%;
+      }
+      .app.empty .tile {
+        border: 2px dashed var(--line);
+        color: var(--ink-3);
+        font: 400 32px var(--sans);
+      }
+      @media (max-width: 720px) {
+        .yard {
+          padding: 16px 16px 24px;
+          border-radius: 24px;
+        }
+        .apps {
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px 12px;
+        }
+        .app .tile {
+          border-radius: 16px;
+        }
+        .app:nth-child(n + 9) {
+          display: none;
+        }
+      }
+
+      /* Sections */
+      section {
+        padding: 120px 0 0;
+      }
+      .head {
+        text-align: center;
+        max-width: 760px;
+        margin: 0 auto 56px;
+      }
+      .kicker {
+        display: inline-block;
+        font-weight: 700;
+        font-size: 14px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        margin: 0 0 14px;
+      }
+      h2 {
+        font-size: clamp(34px, 5.4vw, 60px);
+        line-height: 1.05;
+        letter-spacing: -0.035em;
+        font-weight: 700;
+        margin: 0 0 20px;
+        text-wrap: balance;
+      }
+      .head p {
+        font-size: 19px;
+        color: var(--ink-2);
+        margin: 0;
+        text-wrap: pretty;
+      }
+      h3 {
+        font-size: 21px;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+        margin: 0 0 8px;
+        font-weight: 700;
+      }
+      @media (max-width: 640px) {
+        section {
+          padding-top: 88px;
+        }
+      }
+
+      /* Problem */
+      .versus {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      .side {
+        background: var(--card);
+        border-radius: 28px;
+        padding: 32px;
+        box-shadow: inset 0 0 0 1.5px var(--line);
+      }
+      .side .label {
+        font-weight: 700;
+        font-size: 14px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+        display: block;
+      }
+      .side.before .label {
+        color: var(--red);
+      }
+      .side.after .label {
+        color: var(--green);
+      }
+      .project {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        padding: 12px 0;
+        border-top: 1.5px dashed var(--line);
+      }
+      .project:first-of-type {
+        border-top: 0;
+        padding-top: 0;
+      }
+      .project b {
+        width: 100%;
+        font-size: 15px;
+        margin-bottom: 2px;
+      }
+      .chip {
+        font-size: 13px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: var(--bg-2);
+        color: var(--ink-2);
+      }
+      .chip.bill {
+        background: color-mix(in srgb, var(--red) 16%, transparent);
+        color: var(--red);
+      }
+      .server {
+        border-radius: 20px;
+        padding: 18px;
+        background: var(--bg-2);
+      }
+      .server-top {
+        display: flex;
+        justify-content: space-between;
+        font-weight: 700;
+        font-size: 15px;
+        margin-bottom: 14px;
+      }
+      .server-top span {
+        color: var(--ink-3);
+        font-weight: 600;
+      }
+      .minis {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+      }
+      .minis i {
+        aspect-ratio: 1;
+        border-radius: 10px;
+      }
+      .side p {
+        color: var(--ink-2);
+        margin: 20px 0 0;
+        font-size: 16px;
+      }
+      .side p b {
+        color: var(--ink);
+      }
+      @media (max-width: 800px) {
+        .versus {
+          grid-template-columns: 1fr;
+        }
+        .side {
+          padding: 24px;
+        }
+      }
+
+      /* The stack */
+      .stack {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+      }
+      .layer {
+        border-radius: 28px;
+        padding: 28px 24px;
+        color: var(--on-color);
+        min-height: 220px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .layer b {
+        font-size: 40px;
+        letter-spacing: -0.04em;
+        line-height: 1;
+        font-weight: 700;
+      }
+      .layer span {
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 1.4;
+      }
+      .stack-note {
+        text-align: center;
+        font-weight: 700;
+        color: var(--ink-3);
+        margin: 28px 0 0;
+        font-size: 17px;
+      }
+      @media (max-width: 860px) {
+        .stack {
+          grid-template-columns: 1fr 1fr;
+        }
+        .layer {
+          min-height: 170px;
+        }
+      }
+
+      /* Benefits */
+      .panels {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .panel {
+        --hole: var(--c);
+        background: var(--c);
+        border-radius: 32px;
+        padding: 40px;
+        color: var(--on-color);
+        min-height: 300px;
+        display: flex;
+        flex-direction: column;
+      }
+      .panel-ico {
+        width: 56px;
+        height: 56px;
+        margin-bottom: auto;
+        padding-bottom: 32px;
+        box-sizing: content-box;
+      }
+      .panel.blue {
+        color: #fff;
+      }
+      .panel .big {
+        font-size: clamp(30px, 3.6vw, 42px);
+        line-height: 1.05;
+        letter-spacing: -0.035em;
+        font-weight: 700;
+        margin: 0 0 14px;
+        opacity: 1;
+      }
+      .panel p {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 500;
+        max-width: 28em;
+        opacity: 0.85;
+      }
+      .panel code {
+        background: rgba(255, 255, 255, 0.35);
+        color: inherit;
+      }
+      @media (max-width: 800px) {
+        .panels {
+          grid-template-columns: 1fr;
+        }
+        .panel {
+          padding: 28px;
+          min-height: 0;
+        }
+      }
+
+      /* Features */
+      .features {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 48px 28px;
+        text-align: center;
+      }
+      .feature .ico {
+        width: 52px;
+        height: 52px;
+        margin-bottom: 14px;
+      }
+      .feature p {
+        margin: 0;
+        color: var(--ink-2);
+        font-size: 15px;
+        line-height: 1.5;
+      }
+      @media (max-width: 860px) {
+        .features {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 40px 20px;
+        }
+      }
+
+      /* Steps */
+      .steps {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        counter-reset: step;
+      }
+      .steps li {
+        counter-increment: step;
+        background: var(--card);
+        border-radius: 28px;
+        padding: 28px;
+        box-shadow: inset 0 0 0 1.5px var(--line);
+      }
+      .steps li::before {
+        content: counter(step);
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 19px;
+        margin-bottom: 20px;
+        color: var(--on-color);
+        background: var(--yellow);
+      }
+      .steps li:nth-child(2)::before {
+        background: var(--pink);
+      }
+      .steps li:nth-child(3)::before {
+        background: var(--green);
+      }
+      .steps p {
+        margin: 0;
+        color: var(--ink-2);
+        font-size: 16px;
+      }
+      @media (max-width: 800px) {
+        .steps {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* Prompts */
+      .tabs {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+        margin: 0 auto 28px;
+        padding: 6px;
+        width: fit-content;
+        border-radius: 999px;
+        background: var(--card);
+        box-shadow: inset 0 0 0 1.5px var(--line);
+      }
+      .tabs button {
+        height: 42px;
+        padding: 0 22px;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--ink-2);
+        font: 700 15px var(--sans);
+        cursor: pointer;
+      }
+      .tabs button[aria-selected='true'] {
+        background: var(--ink);
+        color: var(--bg);
+      }
+      .prompt {
+        display: grid;
+        grid-template-columns: 0.85fr 1.15fr;
+        gap: 16px;
+        align-items: stretch;
+      }
+      .prompt[hidden] {
+        display: none;
+      }
+      .about {
+        border-radius: 32px;
+        padding: 36px;
+        color: var(--on-color);
+      }
+      #panel-new-app .about {
+        background: var(--yellow);
+      }
+      #panel-migrate .about {
+        background: var(--pink);
+      }
+      .about h3 {
+        font-size: 28px;
+        letter-spacing: -0.03em;
+        margin-bottom: 12px;
+      }
+      .about p {
+        margin: 0 0 18px;
+        font-weight: 500;
+      }
+      .about ol {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: do;
+      }
+      .about li {
+        counter-increment: do;
+        position: relative;
+        padding: 12px 0 12px 40px;
+        border-top: 1.5px solid rgba(29, 23, 18, 0.15);
+        font-weight: 500;
+        font-size: 16px;
+        line-height: 1.45;
+      }
+      .about li::before {
+        content: counter(do);
+        position: absolute;
+        left: 0;
+        top: 11px;
+        width: 26px;
+        height: 26px;
+        border-radius: 8px;
+        background: var(--on-color);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        font-size: 13px;
+      }
+      .about code {
+        background: rgba(255, 255, 255, 0.45);
+      }
+      .viewer {
+        border-radius: 32px;
+        overflow: hidden;
+        background: var(--card);
+        box-shadow: inset 0 0 0 1.5px var(--line);
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .viewer-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 16px 16px 24px;
+        border-bottom: 1.5px dashed var(--line);
+      }
+      .viewer-bar .name {
+        font: 600 13px var(--mono);
+        color: var(--ink-2);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .viewer-bar .actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .viewer pre {
+        margin: 0;
+        padding: 20px 24px;
+        flex: 1;
+        min-height: 360px;
+        max-height: 520px;
+        overflow: auto;
+        font: 12.5px/1.65 var(--mono);
+        color: var(--ink-2);
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      @media (max-width: 860px) {
+        .prompt {
+          grid-template-columns: 1fr;
+        }
+        .about {
+          padding: 28px;
+        }
+        .viewer pre {
+          min-height: 0;
+          height: 380px;
+        }
+      }
+
+      /* Trade-offs */
+      .tradeoffs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .tradeoffs > div {
+        background: var(--card);
+        border-radius: 28px;
+        padding: 32px;
+        box-shadow: inset 0 0 0 1.5px var(--line);
+      }
+      .tradeoffs ul {
+        list-style: none;
+        margin: 12px 0 0;
+        padding: 0;
+      }
+      .tradeoffs li {
+        padding: 12px 0;
+        border-top: 1.5px dashed var(--line);
+        color: var(--ink-2);
+        font-size: 16px;
+      }
+      .tradeoffs li b {
+        color: var(--ink);
+      }
+      @media (max-width: 800px) {
+        .tradeoffs {
+          grid-template-columns: 1fr;
+        }
+        .tradeoffs > div {
+          padding: 24px;
+        }
+      }
+
+      /* Install */
+      .install {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        max-width: 1000px;
+        margin: 0 auto 20px;
+        background: var(--ink);
+        color: var(--bg);
+        border-radius: 999px;
+        padding: 10px 10px 10px 28px;
+      }
+      .install code {
+        flex: 1;
+        background: none;
+        padding: 0;
+        font-size: 14px;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none;
+      }
+      .install code::before {
+        content: '$ ';
+        opacity: 0.5;
+      }
+      .install .btn {
+        background: var(--green);
+        color: var(--on-color);
+        box-shadow: none;
+      }
+      .fine {
+        text-align: center;
+        color: var(--ink-2);
+        max-width: 40em;
+        margin: 0 auto;
+        font-size: 16px;
+      }
+      @media (max-width: 1000px) {
+        .install {
+          border-radius: 24px;
+          padding: 16px 16px 16px 20px;
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .install code {
+          white-space: pre-wrap;
+          word-break: break-all;
+        }
+      }
+
+      /* Footer */
+      footer {
+        margin-top: 120px;
+        overflow: hidden;
+      }
+      .foot {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        font-weight: 600;
+        font-size: 15px;
+        color: var(--ink-2);
+      }
+      .foot nav {
+        gap: 24px;
+      }
+      .wordmark {
+        font-weight: 700;
+        font-size: clamp(80px, 21vw, 280px);
+        letter-spacing: -0.06em;
+        line-height: 0.8;
+        text-align: center;
+        margin: 48px 0 -0.12em;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 12%, transparent), transparent 85%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        user-select: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Icons: solid shapes on a 24px grid, coloured with currentColor; details are cut out in --hole. -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-logo" viewBox="0 0 16 16">
+        <rect x="1" y="1" width="6" height="6" rx="1.6" fill="var(--green)" />
+        <rect x="9" y="1" width="6" height="6" rx="1.6" fill="var(--red)" />
+        <rect x="1" y="9" width="6" height="6" rx="1.6" fill="var(--blue)" />
+        <rect x="9" y="9" width="6" height="6" rx="1.6" fill="var(--yellow)" />
+      </symbol>
+      <symbol id="i-deploy" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M12 1.5 21 10.5h-5.5V17h-7v-6.5H3z" />
+        <rect fill="currentColor" x="3" y="19" width="18" height="3.5" rx="1.75" />
+      </symbol>
+      <symbol id="i-rollback" viewBox="0 0 24 24">
+        <path fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" d="M6.2 8.2A8 8 0 1 1 4.5 15" />
+        <path fill="currentColor" d="M2 3.2v8h8z" />
+      </symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24">
+        <path fill="none" stroke="currentColor" stroke-width="3.2" d="M7 11V7.5a5 5 0 0 1 10 0V11" />
+        <rect fill="currentColor" x="3" y="10" width="18" height="13" rx="4" />
+        <circle fill="var(--hole)" cx="12" cy="16.5" r="2" />
+      </symbol>
+      <symbol id="i-boxes" viewBox="0 0 24 24">
+        <rect fill="currentColor" x="1.5" y="1.5" width="9.5" height="9.5" rx="2.6" />
+        <rect fill="currentColor" x="13" y="1.5" width="9.5" height="9.5" rx="2.6" />
+        <rect fill="currentColor" x="1.5" y="13" width="9.5" height="9.5" rx="2.6" />
+        <rect fill="currentColor" x="13" y="13" width="9.5" height="9.5" rx="2.6" />
+      </symbol>
+      <symbol id="i-db" viewBox="0 0 24 24">
+        <rect fill="currentColor" x="3" y="1.5" width="18" height="6" rx="3" />
+        <rect fill="currentColor" x="3" y="9" width="18" height="6" rx="3" />
+        <rect fill="currentColor" x="3" y="16.5" width="18" height="6" rx="3" />
+      </symbol>
+      <symbol id="i-cloud" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M6.5 20.5a5.5 5.5 0 0 1-.9-10.93A7 7 0 0 1 19 8.6a6 6 0 0 1-1 11.9z" />
+        <path fill="var(--hole)" d="M12 9.2 16 13.4h-2.6v3.8h-2.8v-3.8H8z" />
+      </symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24">
+        <circle fill="currentColor" cx="12" cy="12" r="10.5" />
+        <path fill="none" stroke="var(--hole)" stroke-width="2.6" stroke-linecap="round" d="M12 6.5V12l3.5 2.5" />
+      </symbol>
+      <symbol id="i-mail" viewBox="0 0 24 24">
+        <rect fill="currentColor" x="1.5" y="4" width="21" height="16" rx="4" />
+        <path fill="none" stroke="var(--hole)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="m5.5 8.5 6.5 5 6.5-5" />
+      </symbol>
+      <symbol id="i-bucket" viewBox="0 0 24 24">
+        <rect fill="currentColor" x="2" y="3" width="20" height="4.5" rx="2.25" />
+        <path fill="currentColor" d="M3.8 9.5h16.4l-1.5 10.7a2.5 2.5 0 0 1-2.5 2.3H7.8a2.5 2.5 0 0 1-2.5-2.3z" />
+      </symbol>
+      <symbol id="i-key" viewBox="0 0 24 24">
+        <circle fill="currentColor" cx="7.5" cy="12" r="6" />
+        <rect fill="currentColor" x="11" y="10.2" width="11.5" height="3.6" rx="1.2" />
+        <rect fill="currentColor" x="17.5" y="12" width="3.6" height="5.5" rx="1.2" />
+        <circle fill="var(--hole)" cx="7.5" cy="12" r="2" />
+      </symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24">
+        <rect fill="currentColor" x="2" y="12" width="5.5" height="10.5" rx="2" />
+        <rect fill="currentColor" x="9.25" y="2" width="5.5" height="20.5" rx="2" />
+        <rect fill="currentColor" x="16.5" y="7.5" width="5.5" height="15" rx="2" />
+      </symbol>
+      <symbol id="i-bolt" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M14 1 3.5 13.5h7L9 23l11.5-13h-7.2z" />
+      </symbol>
+      <symbol id="i-note" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M5 1.5h10l5.5 5.5v13a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-15a3.5 3.5 0 0 1 3-3.5" />
+      </symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M12 22S1.5 15.5 1.5 8.3A5.6 5.6 0 0 1 12 5.1a5.6 5.6 0 0 1 10.5 3.2C22.5 15.5 12 22 12 22" />
+      </symbol>
+      <symbol id="i-star" viewBox="0 0 24 24">
+        <path fill="currentColor" d="m12 1.5 3.2 6.6 7.3 1-5.3 5.1 1.3 7.3L12 18l-6.5 3.5 1.3-7.3L1.5 9.1l7.3-1z" />
+      </symbol>
+      <symbol id="i-cal" viewBox="0 0 24 24">
+        <rect fill="currentColor" x="1.5" y="3.5" width="21" height="19" rx="4" />
+        <rect fill="var(--on-color)" x="6" y="1" width="3" height="5" rx="1.5" />
+        <rect fill="var(--on-color)" x="15" y="1" width="3" height="5" rx="1.5" />
+      </symbol>
+      <symbol id="i-pin" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M12 23s-8.5-7.6-8.5-13.5a8.5 8.5 0 0 1 17 0C20.5 15.4 12 23 12 23" />
+      </symbol>
+    </svg>
+
+    <header>
+      <div class="wrap">
+        <a class="logo" href="#top" aria-label="Sideyard home"><svg width="26" height="26"><use href="#i-logo" /></svg>sideyard</a>
+        <nav aria-label="Main">
+          <a class="wide" href="#why">Why</a>
+          <a class="wide" href="#features">Features</a>
+          <a class="wide" href="#prompts">Prompts</a>
+          <a class="btn primary small" href="#install">Install</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="top">
+      <div class="wrap hero">
+        <span class="pill"
+          ><span class="dots"><i style="background: var(--green)"></i><i style="background: var(--red)"></i><i style="background: var(--blue)"></i><i style="background: var(--yellow)"></i></span
+          >Self-hosted, for Go + React + SQLite apps</span
+        >
+        <h1>Build every app as <mark>one file</mark>. Run them all on <mark class="green">one server</mark>.</h1>
+        <p class="lede">
+          From here on, build each side project on the same small stack and it compiles into a single binary. Sideyard
+          runs every one of them on a cheap VPS you own, with HTTPS, a database editor, backups, jobs, email and
+          zero-downtime deploys built in.
+        </p>
+        <div class="ctas">
+          <a class="btn primary" href="#prompts">Get the prompt for your agent</a>
+          <a class="btn" href="#install">Install on a server</a>
+        </div>
+
+        <figure class="yard" aria-label="Illustration: one server running many small apps">
+          <div class="yard-bar">
+            <span><b>your-server</b> &nbsp;·&nbsp; one VPS, one Sideyard</span>
+            <span class="live">all apps healthy</span>
+          </div>
+          <div class="apps">
+            <div class="app"><div class="tile" style="--c: var(--yellow)"><svg><use href="#i-note" /></svg></div>notes</div>
+            <div class="app"><div class="tile" style="--c: var(--pink)"><svg><use href="#i-heart" /></svg></div>habits</div>
+            <div class="app"><div class="tile" style="--c: var(--blue)"><svg><use href="#i-chart" /></svg></div>budget</div>
+            <div class="app"><div class="tile" style="--c: var(--green)"><svg><use href="#i-cal" /></svg></div>booking</div>
+            <div class="app"><div class="tile" style="--c: var(--orange)"><svg><use href="#i-mail" /></svg></div>newsletter</div>
+            <div class="app"><div class="tile" style="--c: var(--red)"><svg><use href="#i-star" /></svg></div>reviews</div>
+            <div class="app"><div class="tile" style="--c: var(--purple)"><svg><use href="#i-pin" /></svg></div>places</div>
+            <div class="app"><div class="tile" style="--c: var(--yellow)"><svg><use href="#i-clock" /></svg></div>timer</div>
+            <div class="app"><div class="tile" style="--c: var(--blue)"><svg><use href="#i-bucket" /></svg></div>uploads</div>
+            <div class="app"><div class="tile" style="--c: var(--pink)"><svg><use href="#i-bolt" /></svg></div>status</div>
+            <div class="app empty"><div class="tile">+</div>next idea</div>
+            <div class="app empty"><div class="tile">+</div>and the next</div>
+          </div>
+        </figure>
+      </div>
+
+      <section id="why">
+        <div class="wrap">
+          <div class="head">
+            <span class="kicker">Why Sideyard exists</span>
+            <h2>Building got fast. Hosting <mark>didn't</mark>.</h2>
+            <p>
+              A coding agent builds an app in an afternoon. Then it needs a home, and every new project means picking
+              a host, a managed database, a cache, a cron service, an email provider and a file store. Each has its own
+              account, its own setup and its own bill. So most side projects stay on a laptop, or quietly die on a
+              free tier.
+            </p>
+          </div>
+          <div class="versus">
+            <div class="side before">
+              <span class="label">Every project, the usual way</span>
+              <div class="project">
+                <b>Project one</b><span class="chip">host</span><span class="chip">Postgres</span><span class="chip">Redis</span
+                ><span class="chip">cron service</span><span class="chip">email API</span><span class="chip">file store</span
+                ><span class="chip bill">6 bills</span>
+              </div>
+              <div class="project">
+                <b>Project two</b><span class="chip">host</span><span class="chip">Postgres</span><span class="chip">queue</span
+                ><span class="chip">email API</span><span class="chip">Docker</span><span class="chip bill">5 more</span>
+              </div>
+              <div class="project">
+                <b>Project three</b><span class="chip">another stack</span><span class="chip">another dashboard</span
+                ><span class="chip bill">and again</span>
+              </div>
+            </div>
+            <div class="side after">
+              <span class="label">Every project, with Sideyard</span>
+              <div class="server">
+                <div class="server-top">One VPS <span>Sideyard + your apps</span></div>
+                <div class="minis">
+                  <i style="background: var(--yellow)"></i><i style="background: var(--pink)"></i><i style="background: var(--blue)"></i
+                  ><i style="background: var(--green)"></i><i style="background: var(--orange)"></i><i style="background: var(--red)"></i
+                  ><i style="background: var(--purple)"></i><i style="background: var(--yellow)"></i><i style="background: var(--blue)"></i
+                  ><i style="background: var(--pink)"></i>
+                </div>
+              </div>
+              <p>
+                <b>Sideyard fixes the stack instead of the hosting.</b> When every app is Go + React + SQLite, every app
+                is one small binary, and one server runs all of them. The database, jobs, email, files and backups are
+                built into the platform, so there's nothing else to sign up for.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <div class="head">
+            <span class="kicker">How to build from here on</span>
+            <h2>One stack. On purpose.</h2>
+            <p>
+              Every app uses the same four pieces. Fixing the stack is what keeps apps tiny, makes deploys boring, and
+              lets the dashboard understand each app's database, jobs and files instead of just running a container.
+            </p>
+          </div>
+          <div class="stack">
+            <div class="layer" style="background: var(--blue); color: #fff"><b>Go</b><span>The API, background work and WebSockets, in one process</span></div>
+            <div class="layer" style="background: var(--pink)"><b>React</b><span>TypeScript and Vite, embedded in the binary</span></div>
+            <div class="layer" style="background: var(--yellow)"><b>SQLite</b><span>One file in the app's data folder, pure-Go driver</span></div>
+            <div class="layer" style="background: var(--green)"><b>S3</b><span>Uploads and big files, in a bucket you bring</span></div>
+          </div>
+          <p class="stack-note">No Docker. No Postgres. No Redis. No Node at runtime.</p>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <div class="head">
+            <span class="kicker">Why it pays off</span>
+            <h2>Small, boring and <mark class="green">yours</mark>.</h2>
+          </div>
+          <div class="panels">
+            <div class="panel blue" style="--c: var(--blue)">
+              <svg class="panel-ico" aria-hidden="true"><use href="#i-boxes" /></svg>
+              <p class="big">Tens of MB per app.</p>
+              <p>An app is one binary that idles at tens of megabytes, so a 4 GB VPS has room for plenty. One server bill covers every side project.</p>
+            </div>
+            <div class="panel" style="--c: var(--pink)">
+              <svg class="panel-ico" aria-hidden="true"><use href="#i-rollback" /></svg>
+              <p class="big">A bad deploy can't take you down.</p>
+              <p>A new release gets traffic only after it answers <code>/healthz</code>. If it fails, the old one keeps serving.</p>
+            </div>
+            <div class="panel" style="--c: var(--yellow)">
+              <svg class="panel-ico" aria-hidden="true"><use href="#i-note" /></svg>
+              <p class="big">Your agent knows the rules.</p>
+              <p>
+                Every app carries its contract in <code>AGENTS.md</code>, so Claude Code, Cursor or Codex builds features
+                that deploy on the first push instead of reaching for services your server can't run.
+              </p>
+            </div>
+            <div class="panel" style="--c: var(--green)">
+              <svg class="panel-ico" aria-hidden="true"><use href="#i-key" /></svg>
+              <p class="big">Your server. Your data.</p>
+              <p>Databases are files you can see, backups land in your own bucket, and apps are plain Go programs. No lock-in.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="features">
+        <div class="wrap">
+          <div class="head">
+            <span class="kicker">What's in it today</span>
+            <h2>Everything a side project needs. <span class="circled">Already built.<svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M58 4C30 2 4 9 3 21c-1 12 26 17 50 16 25-1 45-7 44-18C96 8 70 3 40 5" /></svg></span></h2>
+            <p>One dashboard for every app, and one binary for the whole platform, with Caddy built in.</p>
+          </div>
+          <div class="features">
+            <div class="feature">
+              <svg class="ico" style="color: var(--green)"><use href="#i-deploy" /></svg>
+              <h3>Push to deploy</h3>
+              <p>A GitHub Action builds one binary and uploads it. Traffic moves only after the health check passes.</p>
+            </div>
+            <div class="feature">
+              <svg class="ico" style="color: var(--blue)"><use href="#i-rollback" /></svg>
+              <h3>Instant rollback</h3>
+              <p>The last five releases stay on disk. Rolling back starts an older one, with no downtime.</p>
+            </div>
+            <div class="feature">
+              <svg class="ico" style="color: var(--orange)"><use href="#i-lock" /></svg>
+              <h3>HTTPS domains</h3>
+              <p>A subdomain for every app, plus custom domains. Certificates are issued and renewed for you.</p>
+            </div>
+            <div class="feature">
+              <svg class="ico" style="color: var(--pink)"><use href="#i-boxes" /></svg>
+              <h3>Isolated apps</h3>
+              <p>Each app runs as its own user with memory and CPU limits, and can write only its own folder.</p>
+            </div>
+            <div class="feature">
+              <svg class="ico" style="color: var(--yellow)"><use href="#i-db" /></svg>
+              <h3>Table and SQL editor</h3>
+              <p>Browse and edit rows, change structure, run SQL, download a snapshot or import a database.</p>
+            </div>
+            <div class="feature">
+              <svg class="ico" style="color: var(--purple)"><use href="#i-cloud" /></svg>
+              <h3>Backups</h3>
+              <p>Every database is snapshotted to your S3 bucket on a schedule. Restore one from the dashboard.</p>
+            </div>
+            <div class="feature">
+              <svg class="ico" style="color: var(--red)"><use href="#i-clock" /></svg>
+              <h3>Cron jobs</h3>
+              <p>Schedules, retries and run history. A job is just an HTTP endpoint in your app.</p>
+            </div>
+            <div class="feature">
+              <svg class="ico" style="color: var(--green)"><use href="#i-mail" /></svg>
+              <h3>Email</h3>
+              <p>Send through any SMTP provider with one API call. Every app gets a sender and a delivery log.</p>
+            </div>
+            <div class="feature">
+              <svg class="ico" style="color: var(--blue)"><use href="#i-bucket" /></svg>
+              <h3>File storage</h3>
+              <p>Connect a bucket per app and browse its files. Credentials reach the app as variables.</p>
+            </div>
+            <div class="feature">
+              <svg class="ico" style="color: var(--orange)"><use href="#i-key" /></svg>
+              <h3>Encrypted variables</h3>
+              <p>Config and secrets are sealed at rest and never shown again once saved.</p>
+            </div>
+            <div class="feature">
+              <svg class="ico" style="color: var(--pink)"><use href="#i-chart" /></svg>
+              <h3>Logs and monitoring</h3>
+              <p>Searchable logs, CPU and memory per app, server health, and a flag in the dashboard when an app goes down.</p>
+            </div>
+            <div class="feature">
+              <svg class="ico" style="color: var(--yellow)"><use href="#i-bolt" /></svg>
+              <h3>One-click updates</h3>
+              <p>Installs with one command. Updates install from the dashboard and roll back if they fail to start.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <div class="head">
+            <span class="kicker">How it works</span>
+            <h2>Prompt. Push. <mark>Live</mark>.</h2>
+            <p>Building the app is your agent's job. Running it is Sideyard's.</p>
+          </div>
+          <ol class="steps">
+            <li>
+              <h3>Start from a prompt</h3>
+              <p>Paste the new-app prompt into your coding agent. It sets up the starter, saves the contract as <code>AGENTS.md</code> and builds what you describe.</p>
+            </li>
+            <li>
+              <h3>Create a project</h3>
+              <p>Add the project in the Sideyard dashboard and put its deploy token in your GitHub repo. The app gets its own subdomain with HTTPS.</p>
+            </li>
+            <li>
+              <h3>Push</h3>
+              <p>CI builds one Linux binary with the frontend inside and uploads it. Sideyard starts it, checks its health, then switches traffic.</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section id="prompts">
+        <div class="wrap">
+          <div class="head">
+            <span class="kicker">Prompts</span>
+            <h2>Paste one into your coding agent.</h2>
+            <p>
+              Each prompt carries the full Sideyard contract and the starter's code, so it works in any agent with
+              nothing to download. Paste it as your first message and the app comes out ready to host.
+            </p>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="Prompts">
+            <button role="tab" id="tab-new-app" aria-controls="panel-new-app" aria-selected="true">New app</button>
+            <button role="tab" id="tab-migrate" aria-controls="panel-migrate" aria-selected="false" tabindex="-1">Existing app</button>
+          </div>
+
+          <div class="prompt" role="tabpanel" id="panel-new-app" aria-labelledby="tab-new-app">
+            <div class="about">
+              <h3>Starting something new</h3>
+              <p>Open your agent in an empty folder, paste this first, and write what you want to build in its last section. The agent:</p>
+              <ol>
+                <li>Creates the starter: Go server, SQLite migrations, jobs, email, React frontend and deploy workflow.</li>
+                <li>Saves the contract as <code>AGENTS.md</code>, so every later session keeps to it.</li>
+                <li>Checks that it builds and answers <code>/healthz</code>.</li>
+                <li>Builds your app inside the stack, then tells you how to deploy it.</li>
+              </ol>
+            </div>
+            <div class="viewer">
+              <div class="viewer-bar">
+                <span class="name" data-meta>new-app.md</span>
+                <span class="actions">
+                  <a class="btn small" href="prompts/new-app.md" download>Download</a>
+                  <button class="btn small primary" data-copy="new-app">Copy prompt</button>
+                </span>
+              </div>
+              <pre tabindex="0" data-prompt="new-app">Loading…</pre>
+            </div>
+          </div>
+
+          <div class="prompt" role="tabpanel" id="panel-migrate" aria-labelledby="tab-migrate" hidden>
+            <div class="about">
+              <h3>Moving an app you have</h3>
+              <p>Paste this in your current project. Nothing changes until you approve a plan, and your running app and its database are never touched. The agent:</p>
+              <ol>
+                <li>Audits the app and writes <code>SIDEYARD_MIGRATION.md</code>: every service mapped to its Sideyard equivalent, every route, every table. Then it waits for you.</li>
+                <li>Ports the backend to Go route by route, keeping the API's shape, and the schema to SQLite.</li>
+                <li>Copies your data with a re-runnable exporter and checks row counts and integrity.</li>
+                <li>Writes the cutover steps, with a rollback that's just pointing DNS back.</li>
+              </ol>
+            </div>
+            <div class="viewer">
+              <div class="viewer-bar">
+                <span class="name" data-meta>migrate.md</span>
+                <span class="actions">
+                  <a class="btn small" href="prompts/migrate.md" download>Download</a>
+                  <button class="btn small primary" data-copy="migrate">Copy prompt</button>
+                </span>
+              </div>
+              <pre tabindex="0" data-prompt="migrate">Loading…</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <div class="head">
+            <span class="kicker">Trade-offs</span>
+            <h2>What you give up, honestly.</h2>
+            <p>Sideyard is for the many small apps you build, not the one that needs a cluster. These limits are choices, and they're what keep it light.</p>
+          </div>
+          <div class="tradeoffs">
+            <div>
+              <h3>Out of scope, permanently</h3>
+              <ul>
+                <li><b>Other databases.</b> No Postgres, MySQL or Redis. SQLite handles more than most apps need.</li>
+                <li><b>Other runtimes.</b> No Node, Python or Ruby servers, and no Docker.</li>
+                <li><b>Scale-out.</b> No Kubernetes, autoscaling or GPUs. One server, sized by you.</li>
+              </ul>
+            </div>
+            <div>
+              <h3>Limits to know today</h3>
+              <ul>
+                <li><b>Backups are snapshots.</b> Every 6 hours by default, so a dead server can lose up to one interval.</li>
+                <li><b>Migrations don't roll back.</b> Each one must work with the previous release's code.</li>
+                <li><b>One admin.</b> A single password-protected user, and alerts show only in the dashboard for now.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="install">
+        <div class="wrap">
+          <div class="head">
+            <span class="kicker">Install</span>
+            <h2>One command on a fresh server.</h2>
+            <p>Point <code>*.example.com</code> at an Ubuntu or Debian server, then run:</p>
+          </div>
+          <div class="install">
+            <code id="install-cmd">curl -fsSL https://github.com/rabeeh-ta/sideyard/releases/latest/download/install.sh | sudo bash</code>
+            <button class="btn small" data-copy="install">Copy</button>
+          </div>
+          <p class="fine">
+            It asks for your domain, an email for Let's Encrypt and an admin password, starts Sideyard as a systemd
+            service and prints the dashboard's address. New versions install from the dashboard with one click, or
+            automatically.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap foot">
+        <span class="logo"><svg width="22" height="22"><use href="#i-logo" /></svg>sideyard</span>
+        <nav aria-label="Footer">
+          <a href="https://github.com/rabeeh-ta/sideyard">GitHub</a>
+          <a href="https://github.com/rabeeh-ta/sideyard/blob/master/docs/architecture.md">Architecture</a>
+          <a href="https://github.com/rabeeh-ta/sideyard/blob/master/docs/install.md">Install guide</a>
+        </nav>
+      </div>
+      <div class="wordmark" aria-hidden="true">sideyard</div>
+    </footer>
+
+    <script>
+      const prompts = {}
+
+      // The prompts are generated next to this page by scripts/prompts.sh.
+      for (const pre of document.querySelectorAll('[data-prompt]')) {
+        const name = pre.dataset.prompt
+        const meta = pre.closest('.viewer').querySelector('[data-meta]')
+        fetch(`prompts/${name}.md`)
+          .then((r) => (r.ok ? r.text() : Promise.reject(new Error(r.statusText))))
+          .then((text) => {
+            prompts[name] = text
+            pre.textContent = text
+            meta.textContent = `${name}.md · ${text.trimEnd().split('\n').length} lines`
+          })
+          .catch(() => {
+            pre.textContent = `Couldn't load the prompt. Open prompts/${name}.md instead.`
+          })
+      }
+
+      async function copy(text) {
+        try {
+          await navigator.clipboard.writeText(text)
+        } catch {
+          // The Clipboard API needs a secure context; fall back for plain http.
+          const area = document.createElement('textarea')
+          area.value = text
+          area.style.position = 'fixed'
+          area.style.opacity = '0'
+          document.body.append(area)
+          area.select()
+          document.execCommand('copy')
+          area.remove()
+        }
+      }
+
+      for (const button of document.querySelectorAll('[data-copy]')) {
+        const label = button.textContent
+        button.addEventListener('click', async () => {
+          const key = button.dataset.copy
+          const text = key === 'install' ? document.getElementById('install-cmd').textContent : prompts[key]
+          if (!text) return
+          await copy(text)
+          button.textContent = 'Copied'
+          setTimeout(() => (button.textContent = label), 1600)
+        })
+      }
+
+      const tabs = [...document.querySelectorAll('[role="tab"]')]
+      function select(tab) {
+        for (const t of tabs) {
+          const on = t === tab
+          t.setAttribute('aria-selected', on)
+          t.tabIndex = on ? 0 : -1
+          document.getElementById(t.getAttribute('aria-controls')).hidden = !on
+        }
+      }
+      tabs.forEach((tab, i) => {
+        tab.addEventListener('click', () => select(tab))
+        tab.addEventListener('keydown', (e) => {
+          if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
+          const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]
+          select(next)
+          next.focus()
+        })
+      })
+      if (location.hash === '#migrate') select(tabs[1])
+    </script>
+  </body>
+</html>

@@ -1,4 +1,4 @@
-.PHONY: web build dev test release vm-test clean
+.PHONY: web build dev test site release vm-test clean
 
 # The dashboard is embedded into the binary, so build it first.
 web:
@@ -15,6 +15,12 @@ test:
 	go vet ./...
 	go test -race ./...
 	cd web && npm run typecheck
+	scripts/prompts.sh --check
+
+# The landing page (site/) is static. Its agent prompts embed the starter, so
+# rebuild them when templates/starter or scripts/prompts/ changes.
+site:
+	scripts/prompts.sh
 
 # A release in dist/: Linux binaries, release.json, SHA256SUMS and install.sh.
 # Pushing a tag (git tag v1.2.3 && git push --tags) makes the GitHub workflow
