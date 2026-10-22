@@ -1,0 +1,1453 @@
+{
+ "method": "Measured on 22 October 2026 on an Azure VM with 4 vCPUs (AMD EPYC 9V74) and 32 GB of RAM, running Ubuntu 24.04 alongside other work. Memory and CPU are the mean of 2 runs; response time and requests served are the best run, since other work on the machine can only slow a stack down. Every stack ran alone with its framework's production defaults (4 workers where the server scales by process), and the JVM and MongoDB were sized for a 4 GB server. The apps, the load tool and how to rerun it are in bench/ in the repository.",
+ "stacks": [
+  {
+   "key": "sideyard",
+   "name": "Go + SQLite (Sideyard)",
+   "runs": 2,
+   "startupMs": 124.0,
+   "diskMB": 10.3,
+   "stages": [
+    {
+     "rate": 0,
+     "sent": 0,
+     "ok": 0,
+     "failed": 0,
+     "throughput": 0,
+     "p50ms": 0,
+     "p95ms": 0,
+     "p99ms": 0,
+     "memMB": 24.678,
+     "cpu": 0.0,
+     "parts": {
+      "app": {
+       "memMB": 24.678,
+       "cpu": 0.0
+      }
+     }
+    },
+    {
+     "rate": 25,
+     "sent": 755,
+     "ok": 755,
+     "failed": 0,
+     "throughput": 25.167,
+     "p50ms": 0.522,
+     "p95ms": 0.782,
+     "p99ms": 1.314,
+     "memMB": 24.459,
+     "cpu": 0.015,
+     "parts": {
+      "app": {
+       "memMB": 24.459,
+       "cpu": 0.015
+      }
+     }
+    },
+    {
+     "rate": 50,
+     "sent": 1509,
+     "ok": 1509,
+     "failed": 0,
+     "throughput": 50.3,
+     "p50ms": 0.483,
+     "p95ms": 0.631,
+     "p99ms": 0.773,
+     "memMB": 24.286,
+     "cpu": 0.026,
+     "parts": {
+      "app": {
+       "memMB": 24.286,
+       "cpu": 0.026
+      }
+     }
+    },
+    {
+     "rate": 100,
+     "sent": 3019,
+     "ok": 3019,
+     "failed": 0,
+     "throughput": 100.633,
+     "p50ms": 0.422,
+     "p95ms": 0.584,
+     "p99ms": 0.8,
+     "memMB": 23.492,
+     "cpu": 0.045,
+     "parts": {
+      "app": {
+       "memMB": 23.492,
+       "cpu": 0.045
+      }
+     }
+    },
+    {
+     "rate": 200,
+     "sent": 6043,
+     "ok": 6043,
+     "failed": 0,
+     "throughput": 201.433,
+     "p50ms": 0.393,
+     "p95ms": 0.622,
+     "p99ms": 1.46,
+     "memMB": 23.319,
+     "cpu": 0.079,
+     "parts": {
+      "app": {
+       "memMB": 23.319,
+       "cpu": 0.079
+      }
+     }
+    },
+    {
+     "rate": 400,
+     "sent": 12103,
+     "ok": 12103,
+     "failed": 0,
+     "throughput": 403.433,
+     "p50ms": 0.407,
+     "p95ms": 0.604,
+     "p99ms": 1.065,
+     "memMB": 23.128,
+     "cpu": 0.147,
+     "parts": {
+      "app": {
+       "memMB": 23.128,
+       "cpu": 0.147
+      }
+     }
+    },
+    {
+     "rate": 800,
+     "sent": 24203,
+     "ok": 24203,
+     "failed": 0,
+     "throughput": 806.767,
+     "p50ms": 0.401,
+     "p95ms": 0.688,
+     "p99ms": 1.186,
+     "memMB": 23.303,
+     "cpu": 0.292,
+     "parts": {
+      "app": {
+       "memMB": 23.303,
+       "cpu": 0.292
+      }
+     }
+    },
+    {
+     "rate": 1600,
+     "sent": 48463,
+     "ok": 48463,
+     "failed": 0,
+     "throughput": 1615.433,
+     "p50ms": 0.468,
+     "p95ms": 1.771,
+     "p99ms": 12.77,
+     "memMB": 25.16,
+     "cpu": 0.541,
+     "parts": {
+      "app": {
+       "memMB": 25.16,
+       "cpu": 0.541
+      }
+     }
+    }
+   ]
+  },
+  {
+   "key": "next",
+   "name": "Next.js + Prisma + Postgres",
+   "runs": 2,
+   "startupMs": 494.0,
+   "diskMB": 888.9,
+   "stages": [
+    {
+     "rate": 0,
+     "sent": 0,
+     "ok": 0,
+     "failed": 0,
+     "throughput": 0,
+     "p50ms": 0,
+     "p95ms": 0,
+     "p99ms": 0,
+     "memMB": 184.296,
+     "cpu": 0.0,
+     "parts": {
+      "app": {
+       "memMB": 160.791,
+       "cpu": 0.0
+      },
+      "db": {
+       "memMB": 23.505,
+       "cpu": 0.0
+      }
+     }
+    },
+    {
+     "rate": 25,
+     "sent": 766,
+     "ok": 766,
+     "failed": 0,
+     "throughput": 25.533,
+     "p50ms": 3.096,
+     "p95ms": 5.871,
+     "p99ms": 9.628,
+     "memMB": 233.306,
+     "cpu": 0.096,
+     "parts": {
+      "app": {
+       "memMB": 202.175,
+       "cpu": 0.087
+      },
+      "db": {
+       "memMB": 31.131,
+       "cpu": 0.009
+      }
+     }
+    },
+    {
+     "rate": 50,
+     "sent": 1536,
+     "ok": 1536,
+     "failed": 0,
+     "throughput": 51.2,
+     "p50ms": 2.279,
+     "p95ms": 5.179,
+     "p99ms": 12.216,
+     "memMB": 303.127,
+     "cpu": 0.116,
+     "parts": {
+      "app": {
+       "memMB": 270.527,
+       "cpu": 0.101
+      },
+      "db": {
+       "memMB": 32.6,
+       "cpu": 0.015
+      }
+     }
+    },
+    {
+     "rate": 100,
+     "sent": 3075,
+     "ok": 3075,
+     "failed": 0,
+     "throughput": 102.5,
+     "p50ms": 1.975,
+     "p95ms": 5.149,
+     "p99ms": 18.247,
+     "memMB": 311.582,
+     "cpu": 0.21,
+     "parts": {
+      "app": {
+       "memMB": 273.408,
+       "cpu": 0.183
+      },
+      "db": {
+       "memMB": 38.175,
+       "cpu": 0.027
+      }
+     }
+    },
+    {
+     "rate": 200,
+     "sent": 6157,
+     "ok": 6157,
+     "failed": 0,
+     "throughput": 205.233,
+     "p50ms": 1.663,
+     "p95ms": 5.297,
+     "p99ms": 17.272,
+     "memMB": 310.828,
+     "cpu": 0.362,
+     "parts": {
+      "app": {
+       "memMB": 274.366,
+       "cpu": 0.319
+      },
+      "db": {
+       "memMB": 36.463,
+       "cpu": 0.043
+      }
+     }
+    },
+    {
+     "rate": 400,
+     "sent": 12375,
+     "ok": 12375,
+     "failed": 0,
+     "throughput": 412.5,
+     "p50ms": 1.564,
+     "p95ms": 8.987,
+     "p99ms": 30.819,
+     "memMB": 386.106,
+     "cpu": 0.564,
+     "parts": {
+      "app": {
+       "memMB": 342.486,
+       "cpu": 0.483
+      },
+      "db": {
+       "memMB": 43.619,
+       "cpu": 0.081
+      }
+     }
+    },
+    {
+     "rate": 800,
+     "sent": 24180,
+     "ok": 24180,
+     "failed": 0,
+     "throughput": 806,
+     "p50ms": 4.143,
+     "p95ms": 233.366,
+     "p99ms": 367.489,
+     "memMB": 463.27,
+     "cpu": 1.062,
+     "parts": {
+      "app": {
+       "memMB": 418.835,
+       "cpu": 0.896
+      },
+      "db": {
+       "memMB": 44.435,
+       "cpu": 0.166
+      }
+     }
+    },
+    {
+     "rate": 1600,
+     "sent": 63458,
+     "ok": 12474,
+     "failed": 50984,
+     "throughput": 415.8,
+     "p50ms": 3348.821,
+     "p95ms": 4991.537,
+     "p99ms": 8560.557,
+     "memMB": 607.356,
+     "cpu": 0.833,
+     "parts": {
+      "app": {
+       "memMB": 562.415,
+       "cpu": 0.708
+      },
+      "db": {
+       "memMB": 44.941,
+       "cpu": 0.126
+      }
+     }
+    }
+   ]
+  },
+  {
+   "key": "mern",
+   "name": "MERN: Express + MongoDB",
+   "runs": 2,
+   "startupMs": 381.0,
+   "diskMB": 496.3,
+   "stages": [
+    {
+     "rate": 0,
+     "sent": 0,
+     "ok": 0,
+     "failed": 0,
+     "throughput": 0,
+     "p50ms": 0,
+     "p95ms": 0,
+     "p99ms": 0,
+     "memMB": 356.31,
+     "cpu": 0.009,
+     "parts": {
+      "app": {
+       "memMB": 180.485,
+       "cpu": 0.002
+      },
+      "db": {
+       "memMB": 175.826,
+       "cpu": 0.007
+      }
+     }
+    },
+    {
+     "rate": 25,
+     "sent": 763,
+     "ok": 763,
+     "failed": 0,
+     "throughput": 25.433,
+     "p50ms": 1.847,
+     "p95ms": 2.419,
+     "p99ms": 2.99,
+     "memMB": 358.036,
+     "cpu": 0.067,
+     "parts": {
+      "app": {
+       "memMB": 181.431,
+       "cpu": 0.045
+      },
+      "db": {
+       "memMB": 176.605,
+       "cpu": 0.022
+      }
+     }
+    },
+    {
+     "rate": 50,
+     "sent": 1527,
+     "ok": 1527,
+     "failed": 0,
+     "throughput": 50.9,
+     "p50ms": 1.494,
+     "p95ms": 2.048,
+     "p99ms": 2.258,
+     "memMB": 359.662,
+     "cpu": 0.083,
+     "parts": {
+      "app": {
+       "memMB": 182.45,
+       "cpu": 0.054
+      },
+      "db": {
+       "memMB": 177.212,
+       "cpu": 0.029
+      }
+     }
+    },
+    {
+     "rate": 100,
+     "sent": 3054,
+     "ok": 3054,
+     "failed": 0,
+     "throughput": 101.8,
+     "p50ms": 1.198,
+     "p95ms": 1.592,
+     "p99ms": 1.933,
+     "memMB": 360.332,
+     "cpu": 0.13,
+     "parts": {
+      "app": {
+       "memMB": 182.692,
+       "cpu": 0.088
+      },
+      "db": {
+       "memMB": 177.64,
+       "cpu": 0.042
+      }
+     }
+    },
+    {
+     "rate": 200,
+     "sent": 6104,
+     "ok": 6104,
+     "failed": 0,
+     "throughput": 203.467,
+     "p50ms": 0.942,
+     "p95ms": 1.508,
+     "p99ms": 1.874,
+     "memMB": 361.116,
+     "cpu": 0.223,
+     "parts": {
+      "app": {
+       "memMB": 182.748,
+       "cpu": 0.162
+      },
+      "db": {
+       "memMB": 178.367,
+       "cpu": 0.061
+      }
+     }
+    },
+    {
+     "rate": 400,
+     "sent": 12217,
+     "ok": 12217,
+     "failed": 0,
+     "throughput": 407.233,
+     "p50ms": 0.876,
+     "p95ms": 1.224,
+     "p99ms": 1.348,
+     "memMB": 362.674,
+     "cpu": 0.386,
+     "parts": {
+      "app": {
+       "memMB": 183.304,
+       "cpu": 0.282
+      },
+      "db": {
+       "memMB": 179.369,
+       "cpu": 0.104
+      }
+     }
+    },
+    {
+     "rate": 800,
+     "sent": 24478,
+     "ok": 24478,
+     "failed": 0,
+     "throughput": 815.933,
+     "p50ms": 0.965,
+     "p95ms": 1.359,
+     "p99ms": 2.208,
+     "memMB": 397.142,
+     "cpu": 0.741,
+     "parts": {
+      "app": {
+       "memMB": 215.879,
+       "cpu": 0.547
+      },
+      "db": {
+       "memMB": 181.263,
+       "cpu": 0.194
+      }
+     }
+    },
+    {
+     "rate": 1600,
+     "sent": 70761,
+     "ok": 36982,
+     "failed": 33779,
+     "throughput": 1232.733,
+     "p50ms": 659.445,
+     "p95ms": 4391.385,
+     "p99ms": 5663.692,
+     "memMB": 575.98,
+     "cpu": 1.235,
+     "parts": {
+      "app": {
+       "memMB": 372.404,
+       "cpu": 0.944
+      },
+      "db": {
+       "memMB": 203.576,
+       "cpu": 0.292
+      }
+     }
+    }
+   ]
+  },
+  {
+   "key": "flask",
+   "name": "Flask + Postgres (gunicorn)",
+   "runs": 2,
+   "startupMs": 683.0,
+   "diskMB": 168.4,
+   "stages": [
+    {
+     "rate": 0,
+     "sent": 0,
+     "ok": 0,
+     "failed": 0,
+     "throughput": 0,
+     "p50ms": 0,
+     "p95ms": 0,
+     "p99ms": 0,
+     "memMB": 237.886,
+     "cpu": 0.0,
+     "parts": {
+      "app": {
+       "memMB": 199.621,
+       "cpu": 0.0
+      },
+      "db": {
+       "memMB": 38.266,
+       "cpu": 0.0
+      }
+     }
+    },
+    {
+     "rate": 25,
+     "sent": 766,
+     "ok": 766,
+     "failed": 0,
+     "throughput": 25.533,
+     "p50ms": 3.14,
+     "p95ms": 5.877,
+     "p99ms": 9.562,
+     "memMB": 238.507,
+     "cpu": 0.084,
+     "parts": {
+      "app": {
+       "memMB": 200.17,
+       "cpu": 0.072
+      },
+      "db": {
+       "memMB": 38.337,
+       "cpu": 0.012
+      }
+     }
+    },
+    {
+     "rate": 50,
+     "sent": 1532,
+     "ok": 1532,
+     "failed": 0,
+     "throughput": 51.067,
+     "p50ms": 3.135,
+     "p95ms": 6.031,
+     "p99ms": 11.957,
+     "memMB": 238.66,
+     "cpu": 0.167,
+     "parts": {
+      "app": {
+       "memMB": 200.175,
+       "cpu": 0.144
+      },
+      "db": {
+       "memMB": 38.486,
+       "cpu": 0.022
+      }
+     }
+    },
+    {
+     "rate": 100,
+     "sent": 3060,
+     "ok": 3060,
+     "failed": 0,
+     "throughput": 102,
+     "p50ms": 2.62,
+     "p95ms": 5.306,
+     "p99ms": 11.246,
+     "memMB": 238.776,
+     "cpu": 0.285,
+     "parts": {
+      "app": {
+       "memMB": 200.184,
+       "cpu": 0.25
+      },
+      "db": {
+       "memMB": 38.591,
+       "cpu": 0.036
+      }
+     }
+    },
+    {
+     "rate": 200,
+     "sent": 6132,
+     "ok": 6132,
+     "failed": 0,
+     "throughput": 204.4,
+     "p50ms": 2.518,
+     "p95ms": 5.593,
+     "p99ms": 10.82,
+     "memMB": 238.886,
+     "cpu": 0.529,
+     "parts": {
+      "app": {
+       "memMB": 200.173,
+       "cpu": 0.463
+      },
+      "db": {
+       "memMB": 38.713,
+       "cpu": 0.067
+      }
+     }
+    },
+    {
+     "rate": 400,
+     "sent": 12280,
+     "ok": 12280,
+     "failed": 0,
+     "throughput": 409.333,
+     "p50ms": 2.448,
+     "p95ms": 6.278,
+     "p99ms": 13.843,
+     "memMB": 239.195,
+     "cpu": 1.049,
+     "parts": {
+      "app": {
+       "memMB": 200.194,
+       "cpu": 0.923
+      },
+      "db": {
+       "memMB": 39.0,
+       "cpu": 0.126
+      }
+     }
+    },
+    {
+     "rate": 800,
+     "sent": 24639,
+     "ok": 24639,
+     "failed": 0,
+     "throughput": 821.3,
+     "p50ms": 3.046,
+     "p95ms": 16.944,
+     "p99ms": 29.74,
+     "memMB": 239.684,
+     "cpu": 1.613,
+     "parts": {
+      "app": {
+       "memMB": 200.197,
+       "cpu": 1.416
+      },
+      "db": {
+       "memMB": 39.487,
+       "cpu": 0.198
+      }
+     }
+    },
+    {
+     "rate": 1600,
+     "sent": 49183,
+     "ok": 34778,
+     "failed": 14405,
+     "throughput": 1159.267,
+     "p50ms": 1694.826,
+     "p95ms": 4097.427,
+     "p99ms": 4857.541,
+     "memMB": 240.252,
+     "cpu": 1.506,
+     "parts": {
+      "app": {
+       "memMB": 200.212,
+       "cpu": 1.314
+      },
+      "db": {
+       "memMB": 40.04,
+       "cpu": 0.192
+      }
+     }
+    }
+   ]
+  },
+  {
+   "key": "django",
+   "name": "Django + Postgres (gunicorn)",
+   "runs": 2,
+   "startupMs": 356.0,
+   "diskMB": 167.2,
+   "stages": [
+    {
+     "rate": 0,
+     "sent": 0,
+     "ok": 0,
+     "failed": 0,
+     "throughput": 0,
+     "p50ms": 0,
+     "p95ms": 0,
+     "p99ms": 0,
+     "memMB": 198.946,
+     "cpu": 0.0,
+     "parts": {
+      "app": {
+       "memMB": 163.894,
+       "cpu": 0.0
+      },
+      "db": {
+       "memMB": 35.052,
+       "cpu": 0.0
+      }
+     }
+    },
+    {
+     "rate": 25,
+     "sent": 764,
+     "ok": 764,
+     "failed": 0,
+     "throughput": 25.467,
+     "p50ms": 2.556,
+     "p95ms": 4.125,
+     "p99ms": 7.857,
+     "memMB": 200.486,
+     "cpu": 0.066,
+     "parts": {
+      "app": {
+       "memMB": 164.251,
+       "cpu": 0.058
+      },
+      "db": {
+       "memMB": 36.235,
+       "cpu": 0.008
+      }
+     }
+    },
+    {
+     "rate": 50,
+     "sent": 1529,
+     "ok": 1529,
+     "failed": 0,
+     "throughput": 50.967,
+     "p50ms": 2.391,
+     "p95ms": 4.121,
+     "p99ms": 7.837,
+     "memMB": 200.826,
+     "cpu": 0.118,
+     "parts": {
+      "app": {
+       "memMB": 164.445,
+       "cpu": 0.104
+      },
+      "db": {
+       "memMB": 36.381,
+       "cpu": 0.014
+      }
+     }
+    },
+    {
+     "rate": 100,
+     "sent": 3061,
+     "ok": 3061,
+     "failed": 0,
+     "throughput": 102.033,
+     "p50ms": 2.43,
+     "p95ms": 4.166,
+     "p99ms": 6.981,
+     "memMB": 201.257,
+     "cpu": 0.235,
+     "parts": {
+      "app": {
+       "memMB": 164.759,
+       "cpu": 0.209
+      },
+      "db": {
+       "memMB": 36.499,
+       "cpu": 0.026
+      }
+     }
+    },
+    {
+     "rate": 200,
+     "sent": 6114,
+     "ok": 6114,
+     "failed": 0,
+     "throughput": 203.8,
+     "p50ms": 1.987,
+     "p95ms": 3.914,
+     "p99ms": 15.04,
+     "memMB": 201.7,
+     "cpu": 0.396,
+     "parts": {
+      "app": {
+       "memMB": 165.054,
+       "cpu": 0.354
+      },
+      "db": {
+       "memMB": 36.646,
+       "cpu": 0.042
+      }
+     }
+    },
+    {
+     "rate": 400,
+     "sent": 12074,
+     "ok": 12074,
+     "failed": 0,
+     "throughput": 402.467,
+     "p50ms": 2.828,
+     "p95ms": 6.907,
+     "p99ms": 21.686,
+     "memMB": 202.034,
+     "cpu": 0.759,
+     "parts": {
+      "app": {
+       "memMB": 165.114,
+       "cpu": 0.682
+      },
+      "db": {
+       "memMB": 36.92,
+       "cpu": 0.077
+      }
+     }
+    },
+    {
+     "rate": 800,
+     "sent": 24701,
+     "ok": 24701,
+     "failed": 0,
+     "throughput": 823.367,
+     "p50ms": 2.331,
+     "p95ms": 27.908,
+     "p99ms": 71.72,
+     "memMB": 203.577,
+     "cpu": 1.444,
+     "parts": {
+      "app": {
+       "memMB": 166.06,
+       "cpu": 1.298
+      },
+      "db": {
+       "memMB": 37.517,
+       "cpu": 0.145
+      }
+     }
+    },
+    {
+     "rate": 1600,
+     "sent": 49597,
+     "ok": 28024,
+     "failed": 21573,
+     "throughput": 934.133,
+     "p50ms": 1798.056,
+     "p95ms": 2703.277,
+     "p99ms": 4683.819,
+     "memMB": 204.409,
+     "cpu": 1.305,
+     "parts": {
+      "app": {
+       "memMB": 166.239,
+       "cpu": 1.174
+      },
+      "db": {
+       "memMB": 38.17,
+       "cpu": 0.131
+      }
+     }
+    }
+   ]
+  },
+  {
+   "key": "fastapi",
+   "name": "FastAPI + Postgres (uvicorn)",
+   "runs": 2,
+   "startupMs": 1141.0,
+   "diskMB": 200.5,
+   "stages": [
+    {
+     "rate": 0,
+     "sent": 0,
+     "ok": 0,
+     "failed": 0,
+     "throughput": 0,
+     "p50ms": 0,
+     "p95ms": 0,
+     "p99ms": 0,
+     "memMB": 317.349,
+     "cpu": 0.005,
+     "parts": {
+      "app": {
+       "memMB": 268.95,
+       "cpu": 0.005
+      },
+      "db": {
+       "memMB": 48.398,
+       "cpu": 0.0
+      }
+     }
+    },
+    {
+     "rate": 25,
+     "sent": 772,
+     "ok": 772,
+     "failed": 0,
+     "throughput": 25.733,
+     "p50ms": 3.59,
+     "p95ms": 8.623,
+     "p99ms": 29.612,
+     "memMB": 321.763,
+     "cpu": 0.084,
+     "parts": {
+      "app": {
+       "memMB": 270.893,
+       "cpu": 0.072
+      },
+      "db": {
+       "memMB": 50.87,
+       "cpu": 0.011
+      }
+     }
+    },
+    {
+     "rate": 50,
+     "sent": 1550,
+     "ok": 1550,
+     "failed": 0,
+     "throughput": 51.667,
+     "p50ms": 3.334,
+     "p95ms": 7.24,
+     "p99ms": 19.923,
+     "memMB": 323.481,
+     "cpu": 0.158,
+     "parts": {
+      "app": {
+       "memMB": 271.207,
+       "cpu": 0.137
+      },
+      "db": {
+       "memMB": 52.274,
+       "cpu": 0.021
+      }
+     }
+    },
+    {
+     "rate": 100,
+     "sent": 3084,
+     "ok": 3084,
+     "failed": 0,
+     "throughput": 102.8,
+     "p50ms": 2.248,
+     "p95ms": 5.31,
+     "p99ms": 28.935,
+     "memMB": 328.344,
+     "cpu": 0.284,
+     "parts": {
+      "app": {
+       "memMB": 271.803,
+       "cpu": 0.244
+      },
+      "db": {
+       "memMB": 56.541,
+       "cpu": 0.04
+      }
+     }
+    },
+    {
+     "rate": 200,
+     "sent": 6178,
+     "ok": 6178,
+     "failed": 0,
+     "throughput": 205.933,
+     "p50ms": 2.155,
+     "p95ms": 5.973,
+     "p99ms": 29.529,
+     "memMB": 331.591,
+     "cpu": 0.514,
+     "parts": {
+      "app": {
+       "memMB": 272.296,
+       "cpu": 0.444
+      },
+      "db": {
+       "memMB": 59.295,
+       "cpu": 0.07
+      }
+     }
+    },
+    {
+     "rate": 400,
+     "sent": 12405,
+     "ok": 12405,
+     "failed": 0,
+     "throughput": 413.5,
+     "p50ms": 2.356,
+     "p95ms": 6.761,
+     "p99ms": 26.625,
+     "memMB": 332.454,
+     "cpu": 1.105,
+     "parts": {
+      "app": {
+       "memMB": 272.47,
+       "cpu": 0.966
+      },
+      "db": {
+       "memMB": 59.985,
+       "cpu": 0.139
+      }
+     }
+    },
+    {
+     "rate": 800,
+     "sent": 24500,
+     "ok": 7025,
+     "failed": 17475,
+     "throughput": 234.167,
+     "p50ms": 143.771,
+     "p95ms": 400.213,
+     "p99ms": 548.173,
+     "memMB": 692.488,
+     "cpu": 0.554,
+     "parts": {
+      "app": {
+       "memMB": 581.009,
+       "cpu": 0.549
+      },
+      "db": {
+       "memMB": 111.479,
+       "cpu": 0.005
+      }
+     }
+    },
+    {
+     "rate": 1600,
+     "sent": 49624,
+     "ok": 0,
+     "failed": 49624,
+     "throughput": 0,
+     "p50ms": 0,
+     "p95ms": 0,
+     "p99ms": 0,
+     "memMB": 1316.077,
+     "cpu": 0.602,
+     "parts": {
+      "app": {
+       "memMB": 1204.557,
+       "cpu": 0.602
+      },
+      "db": {
+       "memMB": 111.519,
+       "cpu": 0.0
+      }
+     }
+    }
+   ]
+  },
+  {
+   "key": "spring",
+   "name": "Spring Boot + Postgres",
+   "runs": 2,
+   "startupMs": 6425.0,
+   "diskMB": 282.7,
+   "stages": [
+    {
+     "rate": 0,
+     "sent": 0,
+     "ok": 0,
+     "failed": 0,
+     "throughput": 0,
+     "p50ms": 0,
+     "p95ms": 0,
+     "p99ms": 0,
+     "memMB": 371.867,
+     "cpu": 0.001,
+     "parts": {
+      "app": {
+       "memMB": 322.107,
+       "cpu": 0.001
+      },
+      "db": {
+       "memMB": 49.76,
+       "cpu": 0.0
+      }
+     }
+    },
+    {
+     "rate": 25,
+     "sent": 769,
+     "ok": 769,
+     "failed": 0,
+     "throughput": 25.633,
+     "p50ms": 1.89,
+     "p95ms": 4.409,
+     "p99ms": 25.449,
+     "memMB": 410.088,
+     "cpu": 0.141,
+     "parts": {
+      "app": {
+       "memMB": 359.537,
+       "cpu": 0.136
+      },
+      "db": {
+       "memMB": 50.551,
+       "cpu": 0.006
+      }
+     }
+    },
+    {
+     "rate": 50,
+     "sent": 1536,
+     "ok": 1536,
+     "failed": 0,
+     "throughput": 51.2,
+     "p50ms": 1.162,
+     "p95ms": 3.667,
+     "p99ms": 6.306,
+     "memMB": 434.311,
+     "cpu": 0.107,
+     "parts": {
+      "app": {
+       "memMB": 383.569,
+       "cpu": 0.093
+      },
+      "db": {
+       "memMB": 50.742,
+       "cpu": 0.013
+      }
+     }
+    },
+    {
+     "rate": 100,
+     "sent": 3075,
+     "ok": 3075,
+     "failed": 0,
+     "throughput": 102.5,
+     "p50ms": 0.772,
+     "p95ms": 3.676,
+     "p99ms": 11.031,
+     "memMB": 454.436,
+     "cpu": 0.183,
+     "parts": {
+      "app": {
+       "memMB": 403.547,
+       "cpu": 0.161
+      },
+      "db": {
+       "memMB": 50.889,
+       "cpu": 0.023
+      }
+     }
+    },
+    {
+     "rate": 200,
+     "sent": 6161,
+     "ok": 6161,
+     "failed": 0,
+     "throughput": 205.367,
+     "p50ms": 0.744,
+     "p95ms": 3.498,
+     "p99ms": 7.414,
+     "memMB": 460.079,
+     "cpu": 0.175,
+     "parts": {
+      "app": {
+       "memMB": 409.063,
+       "cpu": 0.132
+      },
+      "db": {
+       "memMB": 51.016,
+       "cpu": 0.043
+      }
+     }
+    },
+    {
+     "rate": 400,
+     "sent": 12330,
+     "ok": 12330,
+     "failed": 0,
+     "throughput": 411,
+     "p50ms": 0.624,
+     "p95ms": 3.449,
+     "p99ms": 8.791,
+     "memMB": 474.212,
+     "cpu": 0.285,
+     "parts": {
+      "app": {
+       "memMB": 422.903,
+       "cpu": 0.213
+      },
+      "db": {
+       "memMB": 51.309,
+       "cpu": 0.072
+      }
+     }
+    },
+    {
+     "rate": 800,
+     "sent": 24677,
+     "ok": 24677,
+     "failed": 0,
+     "throughput": 822.567,
+     "p50ms": 0.588,
+     "p95ms": 4.136,
+     "p99ms": 10.292,
+     "memMB": 475.43,
+     "cpu": 0.546,
+     "parts": {
+      "app": {
+       "memMB": 423.511,
+       "cpu": 0.413
+      },
+      "db": {
+       "memMB": 51.919,
+       "cpu": 0.133
+      }
+     }
+    },
+    {
+     "rate": 1600,
+     "sent": 49589,
+     "ok": 49589,
+     "failed": 0,
+     "throughput": 1652.967,
+     "p50ms": 0.692,
+     "p95ms": 6.351,
+     "p99ms": 141.301,
+     "memMB": 554.768,
+     "cpu": 0.906,
+     "parts": {
+      "app": {
+       "memMB": 501.78,
+       "cpu": 0.649
+      },
+      "db": {
+       "memMB": 52.988,
+       "cpu": 0.257
+      }
+     }
+    }
+   ]
+  },
+  {
+   "key": "rails",
+   "name": "Rails + Postgres (Puma, 4 workers)",
+   "runs": 2,
+   "startupMs": 1138.0,
+   "diskMB": 163.9,
+   "stages": [
+    {
+     "rate": 0,
+     "sent": 0,
+     "ok": 0,
+     "failed": 0,
+     "throughput": 0,
+     "p50ms": 0,
+     "p95ms": 0,
+     "p99ms": 0,
+     "memMB": 441.614,
+     "cpu": 0.0,
+     "parts": {
+      "app": {
+       "memMB": 387.918,
+       "cpu": 0.0
+      },
+      "db": {
+       "memMB": 53.696,
+       "cpu": 0.0
+      }
+     }
+    },
+    {
+     "rate": 25,
+     "sent": 774,
+     "ok": 774,
+     "failed": 0,
+     "throughput": 25.8,
+     "p50ms": 4.515,
+     "p95ms": 7.526,
+     "p99ms": 14.979,
+     "memMB": 454.907,
+     "cpu": 0.11,
+     "parts": {
+      "app": {
+       "memMB": 401.169,
+       "cpu": 0.103
+      },
+      "db": {
+       "memMB": 53.738,
+       "cpu": 0.007
+      }
+     }
+    },
+    {
+     "rate": 50,
+     "sent": 1547,
+     "ok": 1547,
+     "failed": 0,
+     "throughput": 51.567,
+     "p50ms": 3.843,
+     "p95ms": 6.085,
+     "p99ms": 13.459,
+     "memMB": 466.662,
+     "cpu": 0.179,
+     "parts": {
+      "app": {
+       "memMB": 412.84,
+       "cpu": 0.166
+      },
+      "db": {
+       "memMB": 53.821,
+       "cpu": 0.012
+      }
+     }
+    },
+    {
+     "rate": 100,
+     "sent": 3095,
+     "ok": 3095,
+     "failed": 0,
+     "throughput": 103.167,
+     "p50ms": 3.252,
+     "p95ms": 6.371,
+     "p99ms": 15.884,
+     "memMB": 487.12,
+     "cpu": 0.319,
+     "parts": {
+      "app": {
+       "memMB": 433.134,
+       "cpu": 0.298
+      },
+      "db": {
+       "memMB": 53.986,
+       "cpu": 0.021
+      }
+     }
+    },
+    {
+     "rate": 200,
+     "sent": 6208,
+     "ok": 6208,
+     "failed": 0,
+     "throughput": 206.933,
+     "p50ms": 2.838,
+     "p95ms": 6.549,
+     "p99ms": 17.073,
+     "memMB": 497.363,
+     "cpu": 0.595,
+     "parts": {
+      "app": {
+       "memMB": 443.185,
+       "cpu": 0.558
+      },
+      "db": {
+       "memMB": 54.178,
+       "cpu": 0.038
+      }
+     }
+    },
+    {
+     "rate": 400,
+     "sent": 12096,
+     "ok": 12096,
+     "failed": 0,
+     "throughput": 403.2,
+     "p50ms": 3.302,
+     "p95ms": 10.609,
+     "p99ms": 27.869,
+     "memMB": 499.036,
+     "cpu": 1.266,
+     "parts": {
+      "app": {
+       "memMB": 444.446,
+       "cpu": 1.189
+      },
+      "db": {
+       "memMB": 54.59,
+       "cpu": 0.077
+      }
+     }
+    },
+    {
+     "rate": 800,
+     "sent": 24792,
+     "ok": 24792,
+     "failed": 0,
+     "throughput": 826.4,
+     "p50ms": 292.173,
+     "p95ms": 592.454,
+     "p99ms": 676.895,
+     "memMB": 512.445,
+     "cpu": 2.752,
+     "parts": {
+      "app": {
+       "memMB": 457.228,
+       "cpu": 2.581
+      },
+      "db": {
+       "memMB": 55.217,
+       "cpu": 0.171
+      }
+     }
+    },
+    {
+     "rate": 1600,
+     "sent": 66593,
+     "ok": 17148,
+     "failed": 49445,
+     "throughput": 571.6,
+     "p50ms": 3746.128,
+     "p95ms": 6194.32,
+     "p99ms": 7851.107,
+     "memMB": 542.05,
+     "cpu": 1.84,
+     "parts": {
+      "app": {
+       "memMB": 486.238,
+       "cpu": 1.735
+      },
+      "db": {
+       "memMB": 55.813,
+       "cpu": 0.105
+      }
+     }
+    }
+   ]
+  }
+ ]
+}
