@@ -112,6 +112,14 @@ Set up off-server backups in **Platform settings → Backups**: connect an S3-co
 
 To rebuild a dead server: install Sideyard, stop it, put your saved `master.key` and the latest `sideyard.db` copy (gunzipped) in `/var/lib/sideyard`, start it, then redeploy each app from CI and restore its database from **Database → Backups in S3**.
 
+## Uninstalling
+
+```sh
+curl -fsSL https://github.com/rabeeh-ta/sideyard/releases/latest/download/install.sh | sudo bash -s -- --uninstall
+```
+
+It lists what goes and removes nothing until you type the domain: the service, every app with its unit, Unix user, database and files, and all of `/opt/sideyard`, `/etc/sideyard` and `/var/lib/sideyard`, master key included. Backups already in S3 stay there; to restore them on another server, download the master key first (**Platform settings → Security**). It needs a terminal, so `--yes` doesn't skip the question.
+
 ## Publishing releases
 
 Releases come from this repository's [release workflow](../.github/workflows/release.yml). Push a version tag and it runs the tests, builds `make release VERSION=<tag> SOURCE=<this repository's URL>`, and publishes the Linux binaries, `release.json` (what the update check reads), `SHA256SUMS` and `install.sh` as a GitHub release:

@@ -6,7 +6,8 @@
 # A fresh install asks for your domain (offering a free sslip.io name for the
 # server's IP when you have none) and an admin password, then starts Sideyard
 # as a systemd service. Running it again upgrades to the newest release;
-# settings, apps and data stay as they are.
+# settings, apps and data stay as they are. --uninstall removes all of it,
+# once you've typed the domain to confirm.
 #
 # Everything runs from main at the bottom, so a download cut off midway runs
 # nothing.
@@ -35,6 +36,8 @@ Options:
   --yes             ask nothing; read answers from the environment instead:
                     SIDEYARD_DOMAIN (required), SIDEYARD_ACME_EMAIL,
                     SIDEYARD_ADMIN_PASSWORD (generated if empty)
+  --uninstall       remove Sideyard, its apps and all their data, after you
+                    type the domain to confirm (needs a terminal)
   --help            show this
 
 Without a terminal it behaves as with --yes. sudo drops your environment,
@@ -447,13 +450,90 @@ EOF
   say ""
 }
 
+# --- uninstall ------------------------------------------------------------
+
+# db_values SQL prints what the query selects from Sideyard's database, one
+# value per line. The binary's query helper answers in JSON, so the query
+# marks each value with @@ to pick it out; they're IDs and project names.
+db_values() {
+  printf '{"op":"exec","sql":"%s"}' "$1" | "$BIN" sqlite-query "$DATA_DIR/sideyard.db" 2>/dev/null |
+    grep -o '"@@[a-z0-9-]*"' | tr -d '"@' || true
+}
+
+uninstall() {
+  local unit
+  unit=$(systemctl show sideyard -p FragmentPath --value 2>/dev/null || true)
+  if [ -z "$unit" ] && [ ! -e "$UNIT_FILE" ] && [ ! -e "$BIN_DIR" ] && [ ! -e "$CONF_DIR" ] && [ ! -e "$DATA_DIR" ]; then
+    say "Sideyard isn't installed on this server."
+    return
+  fi
+  [ "$INTERACTIVE" = 1 ] || die "Uninstalling asks you to type the domain to confirm, so run it in a terminal, without --yes."
+
+  local current domain instance apps
+  current=$("$BIN" version 2>/dev/null || true)
+  domain=$(sed -n 's/^SIDEYARD_DOMAIN=//p' "$ENV_FILE" 2>/dev/null | tail -n 1)
+  # Every app's unit and Unix user is named after this installation's ID,
+  # which keeps other installations' apps out of reach.
+  instance=$(db_values "SELECT '@@' || value FROM settings WHERE key = 'instance_id'")
+  apps=$(db_values "SELECT '@@' || name FROM projects ORDER BY name" | paste -sd, - | sed 's/,/, /g')
+
+  say ""
+  say "${GREEN}■${RESET} ${RED}■${RESET}  ${BOLD}Sideyard${RESET} $current"
+  say "${BLUE}■${RESET} ${YELLOW}■${RESET}  ${BOLD}Uninstalling${RESET} deletes all of this, for good:"
+  say ""
+  [ -z "$apps" ] || say "  Apps        $apps (with their databases and files)"
+  say "  Dashboard   ${domain:+sideyard.$domain, }its settings and the master key"
+  say "  Files       $(dirname "$BIN_DIR"), $CONF_DIR, $DATA_DIR"
+  say ""
+  say "Backups in S3 stay. Restoring them needs the master key: download it first"
+  say "in the dashboard, under Platform settings → Security."
+
+  local word=${domain:-uninstall} typed=""
+  question "Type ${RED}$word${RESET}${BOLD} to delete everything"
+  ask typed
+  [ "$typed" = "$word" ] || die "That isn't $word. Nothing was removed."
+  say ""
+
+  # Sideyard first, so it doesn't restart the apps as they stop.
+  step "Stopping Sideyard"
+  systemctl disable --now sideyard >/dev/null 2>&1 || true
+  if [ -n "$instance" ]; then
+    step "Stopping the apps and removing their users"
+    systemctl stop "sy-$instance-*" 2>/dev/null || true
+    local user
+    for user in $(getent passwd | cut -d: -f1 | grep "^sy$instance-" || true); do
+      userdel "$user" >/dev/null 2>&1 || warn "Couldn't remove the user $user."
+    done
+  elif [ -f "$DATA_DIR/sideyard.db" ]; then
+    warn "Couldn't read which apps are this installation's, so any still running stay: systemctl list-units 'sy-*'"
+  fi
+
+  step "Removing the files"
+  rm -rf "$UNIT_FILE" "$UNIT_FILE.d" "$CONF_DIR" "$(dirname "$BIN_DIR")" "$DATA_DIR"
+  # A unit written by hand lives elsewhere.
+  [ -z "$unit" ] || rm -f "$unit"
+  if [ "$(readlink /usr/local/bin/sideyard 2>/dev/null)" = "$BIN" ]; then
+    rm -f /usr/local/bin/sideyard
+  fi
+  systemctl daemon-reload
+  systemctl reset-failed sideyard >/dev/null 2>&1 || true
+
+  say ""
+  ok "${BOLD}Sideyard is uninstalled.${RESET}"
+  say ""
+}
+
 # --- main -----------------------------------------------------------------
 
 main() {
   WANT_VERSION=""
-  local assume_yes=0
+  local assume_yes=0 remove=0
   while [ $# -gt 0 ]; do
     case "$1" in
+    --uninstall)
+      remove=1
+      shift
+      ;;
     --version)
       [ $# -ge 2 ] || die "--version needs a value, like v1.2.3"
       WANT_VERSION="$2"
@@ -483,6 +563,10 @@ main() {
   [ "$(uname -s)" = Linux ] || die "Sideyard runs on Linux."
   [ "$(id -u)" = 0 ] || die "Run this as root, e.g.: curl -fsSL <install.sh link> | sudo bash"
   [ -d /run/systemd/system ] || die "Sideyard needs systemd, and this system isn't running it."
+  if [ "$remove" = 1 ]; then
+    uninstall
+    return
+  fi
   command -v curl >/dev/null || die "curl is needed."
   command -v sha256sum >/dev/null || die "sha256sum (coreutils) is needed."
   SOURCE="${SOURCE%/}"
