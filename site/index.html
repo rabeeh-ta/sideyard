@@ -22,16 +22,16 @@
     </script>
     <style>
       :root {
-        --bg: #fff3e4;
-        --bg-2: #fbe9d3;
-        --card: #ffffff;
-        --ink: #2a211c;
-        --ink-2: #6b5d53;
-        --ink-3: #a3907f;
-        --line: #efdcc6;
+        --bg: #faf6f0;
+        --bg-2: #f2ebe1;
+        --card: #fffdfa;
+        --ink: #1f1a16;
+        --ink-2: #5f564e;
+        --ink-3: #786d63;
+        --line: #ebe2d6;
         --hole: var(--card);
         --mark: #ffb8ee;
-        --mark-2: #a6f0c6;
+        --mark-2: #b4ecd0;
 
         --red: #ff4f4f;
         --orange: #ff8a1f;
@@ -41,12 +41,12 @@
         --pink: #f48fe0;
         --purple: #8b5cf6;
         --on-color: #1d1712;
-        --chart-hi: #15803d;
-        --chart-lo: #b9a99a;
-        --cta: #2a211c;
-        --cta-ink: #fff3e4;
-        --sel: #2a211c;
-        --sel-ink: #fff3e4;
+        --chart-hi: #d4383d;
+        --chart-lo: #b5a99d;
+        --cta: #d4383d;
+        --cta-ink: #ffffff;
+        --sel: #1f1a16;
+        --sel-ink: #faf6f0;
 
         --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
@@ -61,7 +61,7 @@
           --card: #1c1c1c;
           --ink: #ffffff;
           --ink-2: #a8a8a8;
-          --ink-3: #6e6e6e;
+          --ink-3: #7c7c7c;
           --line: #2a2a2a;
           --mark: #8f2f7c;
           --mark-2: #12643f;
@@ -80,7 +80,7 @@
         --card: #1c1c1c;
         --ink: #ffffff;
         --ink-2: #a8a8a8;
-        --ink-3: #6e6e6e;
+        --ink-3: #7c7c7c;
         --line: #2a2a2a;
         --mark: #8f2f7c;
         --mark-2: #12643f;
@@ -93,38 +93,38 @@
         color-scheme: dark;
       }
       :root[data-theme='grape'] {
-        --bg: #150f29;
-        --bg-2: #1d1638;
-        --card: #1f1840;
-        --ink: #f5f0ff;
-        --ink-2: #b9addb;
-        --ink-3: #8174a8;
-        --line: #322a57;
-        --mark: #7a2fa8;
-        --mark-2: #1e6b55;
-        --chart-hi: #d05abb;
-        --chart-lo: #5f5791;
-        --cta: #f48fe0;
-        --cta-ink: #1d0b24;
-        --sel: #3a3066;
+        --bg: #120f1a;
+        --bg-2: #18141f;
+        --card: #1c1826;
+        --ink: #f5f3f9;
+        --ink-2: #aaa4ba;
+        --ink-3: #857f97;
+        --line: #2b2638;
+        --mark: #5b3a8c;
+        --mark-2: #1d5f4c;
+        --chart-hi: #ffc21a;
+        --chart-lo: #625c75;
+        --cta: #ffc21a;
+        --cta-ink: #1d1712;
+        --sel: #302a3f;
         --sel-ink: #ffffff;
         color-scheme: dark;
       }
       :root[data-theme='sky'] {
-        --bg: #eef3ff;
-        --bg-2: #dfe8ff;
+        --bg: #f4f6fa;
+        --bg-2: #e9edf4;
         --card: #ffffff;
-        --ink: #0f1933;
-        --ink-2: #4a5677;
-        --ink-3: #8a94b0;
-        --line: #d5def5;
-        --mark: #ffd84d;
-        --mark-2: #b8f0d0;
-        --chart-hi: #2f6bff;
-        --chart-lo: #9aa6c4;
-        --cta: #2f6bff;
+        --ink: #0f1729;
+        --ink-2: #4a5468;
+        --ink-3: #646d81;
+        --line: #e1e6ee;
+        --mark: #cfe0ff;
+        --mark-2: #c6efd9;
+        --chart-hi: #2a6cf0;
+        --chart-lo: #a3acbd;
+        --cta: #2a6cf0;
         --cta-ink: #ffffff;
-        --sel: #0f1933;
+        --sel: #0f1729;
         --sel-ink: #ffffff;
         color-scheme: light;
       }
@@ -291,7 +291,7 @@
       .btn.primary {
         background: var(--cta);
         color: var(--cta-ink);
-        box-shadow: 0 8px 22px -8px rgba(42, 33, 28, 0.55);
+        box-shadow: 0 8px 22px -10px color-mix(in srgb, var(--cta) 80%, transparent);
       }
       .btn.pink {
         background: var(--pink);
@@ -337,7 +337,24 @@
         cursor: pointer;
       }
       .dots i {
-        transition: transform 0.2s;
+        transition:
+          transform 0.2s,
+          scale 0.3s;
+      }
+      :root:not([data-theme]) .dots i:nth-child(2),
+      :root[data-theme='light'] .dots i:nth-child(2),
+      :root[data-theme='dark'] .dots i:nth-child(1),
+      :root[data-theme='sky'] .dots i:nth-child(3),
+      :root[data-theme='grape'] .dots i:nth-child(4) {
+        scale: 1.3;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme]) .dots i:nth-child(2) {
+          scale: none;
+        }
+        :root:not([data-theme]) .dots i:nth-child(1) {
+          scale: 1.3;
+        }
       }
       .dots:hover i:nth-child(odd) {
         transform: translateY(-1px);
@@ -1132,8 +1149,8 @@
         opacity: 0.5;
       }
       .install .btn {
-        background: var(--green);
-        color: var(--on-color);
+        background: var(--cta);
+        color: var(--cta-ink);
         box-shadow: none;
       }
       .fine {
@@ -1520,6 +1537,17 @@
         --bin-sheen: rgba(255, 255, 255, 0.06);
         --bin-shade: rgba(0, 0, 0, 0.3);
         --bin-shadow: rgba(0, 0, 0, 0.75);
+      }
+      :root[data-theme='grape'] .trash {
+        --bin-hi: #3a3548;
+        --bin-lo: #1b1824;
+        --bin-rim: #48425a;
+        --bin-in-hi: #17141f;
+        --bin-in-lo: #0c0a11;
+        --bin-lid-hi: #423c52;
+        --bin-lid-lo: #2f2a3c;
+        --bin-lid-side: #24202f;
+        --bin-handle: #565070;
       }
       .trash-stage {
         position: sticky;
@@ -2448,7 +2476,8 @@
       if (location.hash === '#migrate') select(tabs[1])
 
       // Easter egg: the hero badge's four dots cycle the page through four colour styles.
-      const THEMES = ['light', 'dark', 'grape', 'sky']
+      // In dot order: green night, red cream, blue sky, yellow grape.
+      const THEMES = ['dark', 'light', 'sky', 'grape']
       const themeDots = document.querySelector('[data-theme-dots]')
       themeDots.addEventListener('click', () => {
         const root = document.documentElement
