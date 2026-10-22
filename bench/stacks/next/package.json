@@ -1,0 +1,8 @@
+{
+  "name": "notes-next",
+  "private": true,
+  "scripts": {
+    "build": "prisma generate && next build",
+    "start": "next start"
+  }
+}

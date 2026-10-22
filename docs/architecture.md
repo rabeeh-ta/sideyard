@@ -122,6 +122,7 @@ Integrity rests on HTTPS to the source (plain http is refused except on loopback
 | `web/` | React dashboard |
 | `templates/starter` | The app template, with CI workflow and agent guide |
 | `site/` | Static landing page; its agent prompts embed the starter (`scripts/prompts.sh`) |
+| `bench/` | Measures the starter against the same app on other stacks, for the landing page (its own Go module) |
 
 ## Roadmap
 

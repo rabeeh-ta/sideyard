@@ -1,0 +1,4 @@
+django
+dj-database-url
+psycopg[binary]
+gunicorn
