@@ -14,16 +14,17 @@ This covers the dashboard (`sideyard.example.com`) and every project's subdomain
 
 If the domain is on Cloudflare, set these records to **DNS only** (grey cloud). Sideyard gets its own certificates.
 
+No domain yet? Skip this step: the installer offers `<server IP>.sslip.io` (for 203.0.113.10, `203-0-113-10.sslip.io`), a free name from [sslip.io](https://sslip.io) that resolves to the IP inside it, subdomains included. It follows the server's IP, so it's for trying Sideyard out; [switch to your own domain](#changing-the-domain) when you have one.
+
 ## 2. Install
 
 ```sh
 curl -fsSL https://github.com/rabeeh-ta/sideyard/releases/latest/download/install.sh | sudo bash
 ```
 
-It asks three things:
+It asks two things:
 
-- **Domain**: `example.com`. Apps get `<name>.example.com`; the dashboard is `sideyard.example.com`.
-- **Email** for Let's Encrypt's certificate notices (optional).
+- **Domain**: `example.com`. Apps get `<name>.example.com`; the dashboard is `sideyard.example.com`. Press Enter for the sslip.io name instead.
 - **Admin password**, twice (12+ characters). Leave it empty and one is generated and shown once.
 
 It then checks that ports 80 and 443 are free, shows the DNS record to add if `sideyard.<domain>` doesn't point at the server yet, offers to open ports 80 and 443 if `ufw` is on, and asks before changing anything. Then it:
@@ -51,7 +52,7 @@ For scripts and cloud-init, pass the answers as variables (after `sudo`, which d
 
 ```sh
 curl -fsSL https://github.com/rabeeh-ta/sideyard/releases/latest/download/install.sh \
-  | sudo SIDEYARD_DOMAIN=example.com SIDEYARD_ACME_EMAIL=you@example.com bash -s -- --yes
+  | sudo SIDEYARD_DOMAIN=example.com bash -s -- --yes
 ```
 
 `SIDEYARD_ADMIN_PASSWORD` sets the password; without it one is generated and printed. `--version v1.2.3` installs a given release instead of the newest.
@@ -81,12 +82,16 @@ sudo mv /opt/sideyard/bin/sideyard.prev /opt/sideyard/bin/sideyard && sudo syste
 | Variable | Meaning |
 |---|---|
 | `SIDEYARD_DOMAIN` | Base domain. Projects get `<name>.<domain>`. |
-| `SIDEYARD_ACME_EMAIL` | Let's Encrypt account email. |
+| `SIDEYARD_ACME_EMAIL` | Email for the Let's Encrypt account (optional). Let's Encrypt no longer sends expiry notices or keeps the address, so leaving it empty loses nothing. |
 | `SIDEYARD_PUBLIC_IP` | The server's public IPv4, so the dashboard can tell whether a domain points here when the VM is behind NAT (most cloud VMs). The installer fills it in. |
 | `SIDEYARD_DASHBOARD_HOST` | Serve the dashboard somewhere other than `sideyard.<domain>`. |
 | `SIDEYARD_UPDATE_SOURCE` | Where to look for releases, if not where this build came from (a fork's repository URL), or `off`. |
 
 To set a new admin password: `sudo sideyard reset-password` prints one and signs out every browser.
+
+### Changing the domain
+
+Point the new domain at the server (step 1), set `SIDEYARD_DOMAIN` to it and restart. The dashboard moves to `sideyard.<new domain>` and new projects get `<name>.<new domain>`. Projects you already have keep their addresses: add the new one in each project's **Settings → Domains** and remove the old.
 
 ## What to back up
 

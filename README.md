@@ -20,7 +20,7 @@ Point `*.example.com` at a fresh Ubuntu or Debian server, then run:
 curl -fsSL https://github.com/rabeeh-ta/sideyard/releases/latest/download/install.sh | sudo bash
 ```
 
-It asks for your domain, an email for Let's Encrypt and an admin password, then starts Sideyard as a systemd service and prints the dashboard's address. New versions show up in the dashboard (**Platform settings → Updates**) and install with one click, or automatically. [docs/install.md](docs/install.md) has the details: what the installer does, unattended installs, settings, backups, and publishing releases (`git tag v0.1.0 && git push origin v0.1.0`).
+It asks for your domain (or offers a free sslip.io name for the server's IP) and an admin password, then starts Sideyard as a systemd service and prints the dashboard's address. New versions show up in the dashboard (**Platform settings → Updates**) and install with one click, or automatically. [docs/install.md](docs/install.md) has the details: what the installer does, unattended installs, settings, backups, and publishing releases (`git tag v0.1.0 && git push origin v0.1.0`).
 
 ## Run locally
 

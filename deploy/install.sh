@@ -3,9 +3,10 @@
 #
 #   curl -fsSL https://github.com/rabeeh-ta/sideyard/releases/latest/download/install.sh | sudo bash
 #
-# A fresh install asks for your domain, an email for Let's Encrypt and an
-# admin password, then starts Sideyard as a systemd service. Running it again
-# upgrades to the newest release; settings, apps and data stay as they are.
+# A fresh install asks for your domain (offering a free sslip.io name for the
+# server's IP when you have none) and an admin password, then starts Sideyard
+# as a systemd service. Running it again upgrades to the newest release;
+# settings, apps and data stay as they are.
 #
 # Everything runs from main at the bottom, so a download cut off midway runs
 # nothing.
@@ -44,16 +45,24 @@ EOF
 
 # --- output ---------------------------------------------------------------
 
+# The colours are the logo's four, from the 256-colour palette where the
+# terminal has one.
 if [ -t 1 ]; then
-  BOLD=$'\e[1m' DIM=$'\e[2m' GREEN=$'\e[32m' YELLOW=$'\e[33m' RED=$'\e[31m' RESET=$'\e[0m'
+  BOLD=$'\e[1m' DIM=$'\e[2m' RESET=$'\e[0m'
+  if [ "$(tput colors 2>/dev/null)" -ge 256 ] 2>/dev/null; then
+    GREEN=$'\e[38;5;36m' RED=$'\e[38;5;203m' BLUE=$'\e[38;5;33m' YELLOW=$'\e[38;5;220m'
+  else
+    GREEN=$'\e[32m' RED=$'\e[31m' BLUE=$'\e[34m' YELLOW=$'\e[33m'
+  fi
 else
-  BOLD='' DIM='' GREEN='' YELLOW='' RED='' RESET=''
+  BOLD='' DIM='' RESET='' GREEN='' RED='' BLUE='' YELLOW=''
 fi
-say() { printf '%s\n' "$*"; }
-step() { printf '%s→%s %s\n' "$GREEN" "$RESET" "$*"; }
-warn() { printf '%s!%s %s\n' "$YELLOW" "$RESET" "$*" >&2; }
+say() { printf '  %s\n' "$*"; }
+step() { printf '  %s→%s %s\n' "$BLUE" "$RESET" "$*"; }
+ok() { printf '  %s✓%s %s\n' "$GREEN" "$RESET" "$*"; }
+warn() { printf '  %s!%s %s\n' "$YELLOW" "$RESET" "$*" >&2; }
 die() {
-  printf '%s✗ %s%s\n' "$RED" "$*" "$RESET" >&2
+  printf '  %s✗ %s%s\n' "$RED" "$*" "$RESET" >&2
   exit 1
 }
 
@@ -62,20 +71,31 @@ die() {
 # Questions go to the terminal, since stdin is this script when piped. ask
 # and ask_secret set the variable named by their first argument, so their
 # own locals have names no caller uses.
-ask() { # ask VAR "Question" [default]
-  local _ask_reply=""
-  if [ -n "${3:-}" ]; then
-    printf '%s %s[%s]%s ' "$2" "$DIM" "$3" "$RESET" >/dev/tty
-  else
-    printf '%s ' "$2" >/dev/tty
-  fi
-  IFS= read -r _ask_reply </dev/tty || true
-  printf -v "$1" '%s' "${_ask_reply:-${3:-}}"
+
+question() { # question "Question" [line explaining it...]
+  printf '\n  %s?%s %s%s%s\n' "$BLUE" "$RESET" "$BOLD" "$1" "$RESET" >/dev/tty
+  shift
+  [ $# = 0 ] || printf '    %s\n' "$@" >/dev/tty
 }
 
-ask_secret() { # ask_secret VAR "Question"
+# answered rewrites the answer line just read to show what Enter chose.
+answered() {
+  [ -z "$RESET" ] || printf '\e[1A\e[2K    %s›%s %s\n' "$BLUE" "$RESET" "$1" >/dev/tty
+}
+
+ask() { # ask VAR [default]: the answer to the question above
   local _ask_reply=""
-  printf '%s ' "$2" >/dev/tty
+  printf '    %s›%s ' "$BLUE" "$RESET" >/dev/tty
+  IFS= read -r _ask_reply </dev/tty || true
+  printf -v "$1" '%s' "${_ask_reply:-${2:-}}"
+  if [ -z "$_ask_reply" ] && [ -n "${2:-}" ]; then
+    answered "$2"
+  fi
+}
+
+ask_secret() { # ask_secret VAR [label]: like ask, without echoing the answer
+  local _ask_reply=""
+  printf '    %s%s›%s ' "${2:+$2 }" "$BLUE" "$RESET" >/dev/tty
   IFS= read -rs _ask_reply </dev/tty || true
   printf '\n' >/dev/tty
   printf -v "$1" '%s' "$_ask_reply"
@@ -84,7 +104,8 @@ ask_secret() { # ask_secret VAR "Question"
 confirm() { # confirm "Question" → yes unless answered no
   [ "$INTERACTIVE" = 1 ] || return 0
   local reply=""
-  ask reply "$1 [Y/n]"
+  printf '\n  %s?%s %s%s%s %s[Y/n]%s ' "$BLUE" "$RESET" "$BOLD" "$1" "$RESET" "$DIM" "$RESET" >/dev/tty
+  IFS= read -r reply </dev/tty || true
   case "$reply" in [nN]*) return 1 ;; esac
 }
 
@@ -231,16 +252,15 @@ upgrade() {
     fi
     die "See why: journalctl -u sideyard -n 50"
   fi
-  say "${GREEN}✓${RESET} Sideyard $VERSION is running."
+  ok "Sideyard $VERSION is running."
 }
 
 # --- fresh install --------------------------------------------------------
 
 fresh_install() {
   say ""
-  say "${BOLD}Sideyard $VERSION${RESET}"
-  say "Every app gets <name>.<your domain>; the dashboard is sideyard.<your domain>."
-  say ""
+  say "${GREEN}■${RESET} ${RED}■${RESET}  ${BOLD}Sideyard${RESET} $VERSION"
+  say "${BLUE}■${RESET} ${YELLOW}■${RESET}  Turns this server into a home for your side projects."
 
   # Ports 80 and 443 must be free: Sideyard is the web server.
   if command -v ss >/dev/null; then
@@ -252,61 +272,71 @@ fresh_install() {
     fi
   fi
 
+  # The server's public address: for the domain to offer, the DNS
+  # instructions, and so the dashboard can tell whether a domain points here
+  # when the VM is behind NAT.
+  local public_ip resolved
+  public_ip=$(curl -fsS --max-time 4 https://checkip.amazonaws.com 2>/dev/null | tr -d '[:space:]' || true)
+  [[ "$public_ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || public_ip=""
+
   local domain="${SIDEYARD_DOMAIN:-}" email="${SIDEYARD_ACME_EMAIL:-}" password="${SIDEYARD_ADMIN_PASSWORD:-}"
   local again="" problem="" generated=0
   if [ "$INTERACTIVE" = 1 ]; then
+    # Without a domain of your own, sslip.io's wildcard DNS makes one from
+    # the IP: anything.1-2-3-4.sslip.io resolves to 1.2.3.4.
+    local offer=${domain:-${public_ip:+${public_ip//./-}.sslip.io}}
+    local explain=("Apps get <name>.<domain>, and the dashboard is sideyard.<domain>.")
+    if [ -z "$domain" ] && [ -n "$offer" ]; then
+      explain+=("No domain yet? Press Enter to use ${BOLD}$offer${RESET}, a free name"
+        "from sslip.io that points at this server's IP address.")
+    elif [ -n "$offer" ]; then
+      explain+=("Press Enter for ${BOLD}$offer${RESET}.")
+    fi
+    question "Domain" "${explain[@]}"
     while :; do
-      ask domain "Domain (like example.com):" "$domain"
+      ask domain "$offer"
       domain=$(printf '%s' "$domain" | tr '[:upper:]' '[:lower:]' | sed 's#^https\?://##; s#/.*##; s/^sideyard\.//')
       domain_ok "$domain" && break
-      warn "That doesn't look like a domain name."
+      warn "That doesn't look like a domain name, like example.com."
     done
+    question "Admin password" "At least 12 characters. Press Enter to generate one."
     while :; do
-      ask email "Email for Let's Encrypt certificate notices (optional):" "$email"
-      if [ -z "$email" ] || email_ok "$email"; then break; fi
-      warn "That isn't an email address, and Let's Encrypt would refuse it. Leave it empty to skip."
-      email=""
-    done
-    while :; do
-      ask_secret password "Admin password (12+ characters; empty to generate one):"
-      [ -z "$password" ] && break
+      ask_secret password
+      if [ -z "$password" ]; then
+        answered "${DIM}one is generated and shown at the end${RESET}"
+        break
+      fi
       problem=$(password_problem "$password")
       if [ -n "$problem" ]; then
         warn "$problem"
         continue
       fi
-      ask_secret again "Again:"
+      ask_secret again "Again"
       [ "$password" = "$again" ] && break
       warn "Those didn't match."
     done
   else
     domain=$(printf '%s' "$domain" | tr '[:upper:]' '[:lower:]')
     domain_ok "$domain" || die "Set SIDEYARD_DOMAIN to your domain, like example.com."
-    [ -z "$email" ] || email_ok "$email" || die "SIDEYARD_ACME_EMAIL isn't an email address."
     if [ -n "$password" ]; then
       problem=$(password_problem "$password")
       [ -z "$problem" ] || die "SIDEYARD_ADMIN_PASSWORD: $problem"
     fi
   fi
+  [ -z "$email" ] || email_ok "$email" || die "SIDEYARD_ACME_EMAIL isn't an email address."
   if [ -z "$password" ]; then
     password=$(head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | cut -c1-20)
     generated=1
   fi
 
-  # The server's public address: for the DNS instructions, and so the
-  # dashboard can tell whether a domain points here when the VM is behind NAT.
-  local public_ip resolved
-  public_ip=$(curl -fsS --max-time 4 https://checkip.amazonaws.com 2>/dev/null | tr -d '[:space:]' || true)
-  [[ "$public_ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || public_ip=""
   resolved=$(getent ahostsv4 "sideyard.$domain" 2>/dev/null | awk '{ print $1; exit }' || true)
-
   say ""
   if [ -n "$public_ip" ] && [ "$resolved" = "$public_ip" ]; then
-    step "sideyard.$domain already points here ($public_ip)."
+    ok "sideyard.$domain points at this server ($public_ip)."
   else
     say "${BOLD}DNS${RESET}: add this record at your DNS provider (DNS only, no proxy), if you haven't:"
     say ""
-    say "    *.$domain    A    ${public_ip:-<the public IPv4 address of this server>}"
+    say "    ${BOLD}*.$domain    A    ${public_ip:-<the public IPv4 address of this server>}${RESET}"
     say ""
     if [ -n "$resolved" ]; then
       warn "sideyard.$domain resolves to $resolved${public_ip:+, not $public_ip}. Certificates are issued once it points here."
@@ -324,7 +354,6 @@ fresh_install() {
     fi
   fi
 
-  say ""
   confirm "Install Sideyard $VERSION in $BIN_DIR, with its data in $DATA_DIR?" || exit 0
   say ""
 
@@ -340,7 +369,7 @@ fresh_install() {
 
 # Projects get <name>.<domain>; the dashboard is sideyard.<domain>.
 SIDEYARD_DOMAIN=$domain
-# Let's Encrypt account email.
+# ACME account email (optional).
 SIDEYARD_ACME_EMAIL=$email
 # This server's public address, for the dashboard's DNS checks.
 SIDEYARD_PUBLIC_IP=$public_ip
@@ -397,18 +426,24 @@ EOF
   wait_until_up || die "Sideyard didn't start. See: journalctl -u sideyard -n 50. Running this again retries."
 
   say ""
-  say "${GREEN}✓${RESET} ${BOLD}Sideyard $VERSION is running.${RESET}"
+  ok "${BOLD}Sideyard $VERSION is running.${RESET}"
   say ""
-  say "  Dashboard   https://sideyard.$domain"
+  say "  Dashboard   ${BOLD}${BLUE}https://sideyard.$domain${RESET}"
   if [ "$generated" = 1 ]; then
-    say "  Password    $password   ${DIM}(generated; shown only now)${RESET}"
+    say "  Password    ${BOLD}$password${RESET}   ${YELLOW}(generated; shown only now)${RESET}"
   else
     say "  Password    the one you chose"
   fi
+  if [[ "$domain" == *.sslip.io ]]; then
+    say ""
+    warn "$domain comes from sslip.io and follows this server's IP address."
+    say "  When you have a domain: set SIDEYARD_DOMAIN in $ENV_FILE, then"
+    say "  sudo systemctl restart sideyard"
+  fi
   say ""
-  say "  ${DIM}Logs        journalctl -u sideyard -f${RESET}"
-  say "  ${DIM}Updates     the dashboard offers them; or run this installer again${RESET}"
-  say "  ${DIM}Password    sudo sideyard reset-password (prints a new one)${RESET}"
+  say "  Logs        journalctl -u sideyard -f"
+  say "  Updates     the dashboard offers them; or run this installer again"
+  say "  Password    sudo sideyard reset-password (prints a new one)"
   say ""
 }
 
