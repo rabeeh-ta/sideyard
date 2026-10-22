@@ -3,13 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sideyard: every app one file, every app on one server</title>
+    <title>Sideyard: one home for every app you vibe-code</title>
     <meta
       name="description"
-      content="Sideyard is a self-hosted platform for Go + React + SQLite apps. Every app compiles into one binary, and one small server runs them all, with HTTPS, a database editor, backups, jobs, email and zero-downtime deploys built in."
+      content="Sideyard is a self-hosted home for the apps you build with AI. Your coding agent builds each one on Go + React + SQLite, so every app is a single file, and Sideyard runs all of them on one server you own, with HTTPS, a database, backups, jobs, email and zero-downtime deploys built in."
     />
-    <meta property="og:title" content="Sideyard: build every app as one file, run them all on one server" />
-    <meta property="og:description" content="Go + React + SQLite in a single binary. One server you own runs every side project." />
+    <meta property="og:title" content="Sideyard: one home for every app you vibe-code" />
+    <meta property="og:description" content="You build it with your coding agent. Sideyard runs it, next to everything else you have built, on one server you own." />
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='6' height='6' rx='1.5' fill='%2322c17a'/%3E%3Crect x='9' y='1' width='6' height='6' rx='1.5' fill='%23ff4f4f'/%3E%3Crect x='1' y='9' width='6' height='6' rx='1.5' fill='%232f7bff'/%3E%3Crect x='9' y='9' width='6' height='6' rx='1.5' fill='%23ffc21a'/%3E%3C/svg%3E"
@@ -284,6 +284,34 @@
           0 40px 80px -40px rgba(42, 33, 28, 0.35);
         text-align: left;
       }
+      .yard {
+        position: relative;
+      }
+      .yard-note {
+        position: absolute;
+        right: 28px;
+        top: -50px;
+        display: flex;
+        align-items: flex-start;
+        gap: 2px;
+        color: var(--purple);
+        font-weight: 700;
+        font-size: 17px;
+        transform: rotate(-2deg);
+      }
+      .yard-note svg {
+        width: 46px;
+        height: 40px;
+        margin-top: 6px;
+        overflow: visible;
+      }
+      .yard-note path {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
       .yard-bar {
         display: flex;
         align-items: center;
@@ -322,6 +350,7 @@
         text-align: center;
         font: 500 13px var(--mono);
         color: var(--ink-2);
+        overflow-wrap: anywhere;
       }
       .app .tile {
         --hole: var(--c);
@@ -354,8 +383,20 @@
         .app .tile {
           border-radius: 16px;
         }
-        .app:nth-child(n + 9) {
+        /* six apps and the two empty slots */
+        .app:nth-child(n + 7):nth-child(-n + 10) {
           display: none;
+        }
+        .app {
+          font-size: 11px;
+        }
+        .bar-sub {
+          display: none;
+        }
+        .yard-note {
+          right: 8px;
+          top: -44px;
+          font-size: 15px;
         }
       }
 
@@ -1028,37 +1069,40 @@
       <div class="wrap hero">
         <span class="pill"
           ><span class="dots"><i style="background: var(--green)"></i><i style="background: var(--red)"></i><i style="background: var(--blue)"></i><i style="background: var(--yellow)"></i></span
-          >Self-hosted, for Go + React + SQLite apps</span
+          >Self-hosted, for the apps you build with AI</span
         >
-        <h1>Build every app as <mark>one file</mark>. Run them all on <mark class="green">one server</mark>.</h1>
+        <h1>One home for every app you <mark>vibe-code</mark>.</h1>
         <p class="lede">
-          From here on, build each side project on the same small stack and it compiles into a single binary. Sideyard
-          runs every one of them on a cheap VPS you own, with HTTPS, a database editor, backups, jobs, email and
-          zero-downtime deploys built in.
+          You build them with Claude Code, Cursor or Codex. Sideyard runs all of them on one cheap server you own, each
+          with its own URL, HTTPS, database, backups, jobs and email. The one rule: build on Go + React + SQLite, so
+          every app comes out as a single file.
         </p>
         <div class="ctas">
           <a class="btn primary" href="#prompts">Get the prompt for your agent</a>
           <a class="btn" href="#install">Install on a server</a>
         </div>
 
-        <figure class="yard" aria-label="Illustration: one server running many small apps">
+        <figure class="yard" aria-label="Illustration: one server running ten apps you built, with room for more">
+          <span class="yard-note" aria-hidden="true"
+            ><svg viewBox="0 0 60 50"><path d="M56 6C38 6 18 16 11 42M4 33l7 10 9-7" /></svg>you built every one of these</span
+          >
           <div class="yard-bar">
-            <span><b>your-server</b> &nbsp;·&nbsp; one VPS, one Sideyard</span>
-            <span class="live">all apps healthy</span>
+            <span><b>your-server</b><span class="bar-sub"> &nbsp;·&nbsp; one VPS, one Sideyard</span></span>
+            <span class="live">all apps live</span>
           </div>
           <div class="apps">
-            <div class="app"><div class="tile" style="--c: var(--yellow)"><svg><use href="#i-note" /></svg></div>notes</div>
+            <div class="app"><div class="tile" style="--c: var(--yellow)"><svg><use href="#i-note" /></svg></div>recipes</div>
             <div class="app"><div class="tile" style="--c: var(--pink)"><svg><use href="#i-heart" /></svg></div>habits</div>
-            <div class="app"><div class="tile" style="--c: var(--blue)"><svg><use href="#i-chart" /></svg></div>budget</div>
-            <div class="app"><div class="tile" style="--c: var(--green)"><svg><use href="#i-cal" /></svg></div>booking</div>
+            <div class="app"><div class="tile" style="--c: var(--blue)"><svg><use href="#i-chart" /></svg></div>split-bill</div>
+            <div class="app"><div class="tile" style="--c: var(--green)"><svg><use href="#i-cal" /></svg></div>rsvp</div>
             <div class="app"><div class="tile" style="--c: var(--orange)"><svg><use href="#i-mail" /></svg></div>newsletter</div>
-            <div class="app"><div class="tile" style="--c: var(--red)"><svg><use href="#i-star" /></svg></div>reviews</div>
-            <div class="app"><div class="tile" style="--c: var(--purple)"><svg><use href="#i-pin" /></svg></div>places</div>
-            <div class="app"><div class="tile" style="--c: var(--yellow)"><svg><use href="#i-clock" /></svg></div>timer</div>
-            <div class="app"><div class="tile" style="--c: var(--blue)"><svg><use href="#i-bucket" /></svg></div>uploads</div>
-            <div class="app"><div class="tile" style="--c: var(--pink)"><svg><use href="#i-bolt" /></svg></div>status</div>
+            <div class="app"><div class="tile" style="--c: var(--red)"><svg><use href="#i-star" /></svg></div>tiny-crm</div>
+            <div class="app"><div class="tile" style="--c: var(--purple)"><svg><use href="#i-pin" /></svg></div>trip-plan</div>
+            <div class="app"><div class="tile" style="--c: var(--yellow)"><svg><use href="#i-clock" /></svg></div>gym-log</div>
+            <div class="app"><div class="tile" style="--c: var(--blue)"><svg><use href="#i-bucket" /></svg></div>photo-drop</div>
+            <div class="app"><div class="tile" style="--c: var(--pink)"><svg><use href="#i-bolt" /></svg></div>uptime</div>
             <div class="app empty"><div class="tile">+</div>next idea</div>
-            <div class="app empty"><div class="tile">+</div>and the next</div>
+            <div class="app empty"><div class="tile">+</div>the one after</div>
           </div>
         </figure>
       </div>
@@ -1069,31 +1113,30 @@
             <span class="kicker">Why Sideyard exists</span>
             <h2>Building got fast. Hosting <mark>didn't</mark>.</h2>
             <p>
-              A coding agent builds an app in an afternoon. Then it needs a home, and every new project means picking
-              a host, a managed database, a cache, a cron service, an email provider and a file store. Each has its own
-              account, its own setup and its own bill. So most side projects stay on a laptop, or quietly die on a
-              free tier.
+              You can vibe-code an app in an afternoon now. Then it needs a home, and every app means picking a host, a
+              managed database, a cache, a cron service, an email provider and a file store, each with its own account,
+              setup and bill. So most vibe-coded apps never leave localhost, or quietly die on a free tier.
             </p>
           </div>
           <div class="versus">
             <div class="side before">
-              <span class="label">Every project, the usual way</span>
+              <span class="label">Every app you build, the usual way</span>
               <div class="project">
-                <b>Project one</b><span class="chip">host</span><span class="chip">Postgres</span><span class="chip">Redis</span
+                <b>habits</b><span class="chip">host</span><span class="chip">Postgres</span><span class="chip">Redis</span
                 ><span class="chip">cron service</span><span class="chip">email API</span><span class="chip">file store</span
                 ><span class="chip bill">6 bills</span>
               </div>
               <div class="project">
-                <b>Project two</b><span class="chip">host</span><span class="chip">Postgres</span><span class="chip">queue</span
+                <b>split-bill</b><span class="chip">host</span><span class="chip">Postgres</span><span class="chip">queue</span
                 ><span class="chip">email API</span><span class="chip">Docker</span><span class="chip bill">5 more</span>
               </div>
               <div class="project">
-                <b>Project three</b><span class="chip">another stack</span><span class="chip">another dashboard</span
+                <b>your next idea</b><span class="chip">another stack</span><span class="chip">another dashboard</span
                 ><span class="chip bill">and again</span>
               </div>
             </div>
             <div class="side after">
-              <span class="label">Every project, with Sideyard</span>
+              <span class="label">Every app you build, with Sideyard</span>
               <div class="server">
                 <div class="server-top">One VPS <span>Sideyard + your apps</span></div>
                 <div class="minis">
@@ -1104,9 +1147,9 @@
                 </div>
               </div>
               <p>
-                <b>Sideyard fixes the stack instead of the hosting.</b> When every app is Go + React + SQLite, every app
-                is one small binary, and one server runs all of them. The database, jobs, email, files and backups are
-                built into the platform, so there's nothing else to sign up for.
+                <b>Sideyard is the one place they all live.</b> Each app you push lands on the same server as the others,
+                gets its own URL with HTTPS, and finds its database, jobs, email, file storage and backups already there.
+                There's nothing else to sign up for.
               </p>
             </div>
           </div>
@@ -1117,10 +1160,11 @@
         <div class="wrap">
           <div class="head">
             <span class="kicker">How to build from here on</span>
-            <h2>One stack. On purpose.</h2>
+            <h2>Your agent writes the code. Let it use <mark class="green">one stack</mark>.</h2>
             <p>
-              Every app uses the same four pieces. Fixing the stack is what keeps apps tiny, makes deploys boring, and
-              lets the dashboard understand each app's database, jobs and files instead of just running a container.
+              Left alone, agents reach for a different stack every time: Next.js here, Postgres there, a queue
+              somewhere else, and each needs its own hosting. On Sideyard every app uses the same four pieces. Your agent
+              doesn't mind, and each app comes out as one small file, so one server holds plenty of them.
             </p>
           </div>
           <div class="stack">
@@ -1142,8 +1186,8 @@
           <div class="panels">
             <div class="panel blue" style="--c: var(--blue)">
               <svg class="panel-ico" aria-hidden="true"><use href="#i-boxes" /></svg>
-              <p class="big">Tens of MB per app.</p>
-              <p>An app is one binary that idles at tens of megabytes, so a 4 GB VPS has room for plenty. One server bill covers every side project.</p>
+              <p class="big">Keep every app alive.</p>
+              <p>Each app idles at tens of megabytes, so a 4 GB VPS holds plenty. Nothing has to die because hosting one more felt expensive.</p>
             </div>
             <div class="panel" style="--c: var(--pink)">
               <svg class="panel-ico" aria-hidden="true"><use href="#i-rollback" /></svg>
@@ -1171,8 +1215,8 @@
         <div class="wrap">
           <div class="head">
             <span class="kicker">What's in it today</span>
-            <h2>Everything a side project needs. <span class="circled">Already built.<svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M58 4C30 2 4 9 3 21c-1 12 26 17 50 16 25-1 45-7 44-18C96 8 70 3 40 5" /></svg></span></h2>
-            <p>One dashboard for every app, and one binary for the whole platform, with Caddy built in.</p>
+            <h2>Everything your apps need. <span class="circled">Already built.<svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M58 4C30 2 4 9 3 21c-1 12 26 17 50 16 25-1 45-7 44-18C96 8 70 3 40 5" /></svg></span></h2>
+            <p>One dashboard for every app you've built, and one binary for the whole platform.</p>
           </div>
           <div class="features">
             <div class="feature">
