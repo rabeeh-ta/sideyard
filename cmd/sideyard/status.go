@@ -3,15 +3,21 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
 	"strings"
-	"text/tabwriter"
+	"syscall"
+	"time"
+	"unicode/utf8"
+
+	"golang.org/x/term"
 
 	"sideyard/internal/config"
+	"sideyard/internal/platform"
 	"sideyard/internal/runner"
 	"sideyard/internal/store"
 	"sideyard/internal/version"
@@ -21,8 +27,7 @@ import (
 // It reads the sideyard service's settings first, so the paths and
 // addresses are the ones the service uses.
 func status() error {
-	svc, _ := runner.ShowUnit("sideyard.service", "LoadState", "ActiveState", "MainPID",
-		"ActiveEnterTimestamp", "FragmentPath", "DropInPaths", "EnvironmentFiles", "Environment")
+	svc, _ := runner.ShowUnit("sideyard.service", "LoadState", "FragmentPath", "DropInPaths", "EnvironmentFiles", "Environment")
 	installed := svc["LoadState"] == "loaded"
 	if installed && os.Geteuid() != 0 {
 		return errors.New("only root can read Sideyard's settings and database: sudo sideyard status")
@@ -59,72 +64,122 @@ func status() error {
 	}
 	instance, _ := st.Setting("instance_id")
 
-	fmt.Printf("Sideyard %s: %s\n", version.Version, serviceState(installed, svc))
-	fmt.Printf("Dashboard: %s\n", siteURL(cfg, cfg.DashboardHost))
+	useColors(os.Stdout)
+	out := os.Stdout
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	defer w.Flush()
-	row := func(what, about string) { fmt.Fprintf(w, "%s\t%s\n", what, about) }
+	// Sideyard itself, in a line.
+	self, state := runner.Status{}, "not installed as a service"
+	if installed {
+		self = runner.UnitStatus("sideyard.service")
+		state = string(self.State)
+	}
+	facts := []string{paint(stateColor(state), state)}
+	switch {
+	case !installed:
+	case self.State == runner.Running:
+		facts = append(facts, "up "+uptime(self.StartedAt), fmt.Sprintf("pid %d", self.PID), size(int64(self.MemoryBytes))+" memory")
+	case self.State == runner.Crashed:
+		facts = append(facts, "see why: journalctl -u sideyard -n 50")
+	default:
+		facts = append(facts, "start it: sudo systemctl start sideyard")
+	}
+	fmt.Fprintf(out, "%s %s  %s\n", paint(stateColor(state), "●"), paint(bold, "Sideyard "+version.Version), strings.Join(facts, paint(dim, " · ")))
+	fmt.Fprintf(out, "  %s\n", paint(blue, siteURL(cfg, cfg.DashboardHost)))
+	disk := "disk: " + size(diskUsage(cfg.DataDir)) + " in " + cfg.DataDir
+	if free, ok := freeSpace(cfg.DataDir); ok {
+		disk += ", " + size(free) + " free"
+	}
+	fmt.Fprintf(out, "  %s\n", paint(dim, disk))
 
-	fmt.Fprintln(w, "\nSideyard")
+	// Every app, in a row.
+	fmt.Fprintf(out, "\n%s\n", paint(bold, "APPS"))
+	apps := [][]cell{{{text: "APP", color: dim}, {text: "STATE", color: dim}, {text: "RELEASE", color: dim}, {text: "UP", color: dim},
+		{text: "MEMORY", color: dim, right: true}, {text: "DISK", color: dim, right: true}, {text: "ADDRESS", color: dim}}}
+	if len(projects) == 0 {
+		apps = [][]cell{{{text: "  " + paint(dim, "none yet: create one in the dashboard")}}}
+	}
+	states := map[int64]string{}
+	for _, proj := range projects {
+		state, s := appState(proj)
+		states[proj.ID] = state
+		release, up, memory := "-", "-", "-"
+		if r, err := st.Release(proj.ActiveReleaseID); err == nil {
+			release = fmt.Sprintf("#%d", r.Number)
+		}
+		if s.State == runner.Running && !s.StartedAt.IsZero() {
+			up = uptime(s.StartedAt)
+		}
+		if s.MemoryBytes > 0 {
+			memory = size(int64(s.MemoryBytes))
+		}
+		var urls []string
+		for _, host := range domains[proj.ID] {
+			urls = append(urls, siteURL(cfg, host))
+		}
+		apps = append(apps, []cell{{text: proj.Name, color: bold, dot: stateColor(state)}, {text: state, color: stateColor(state)},
+			{text: release}, {text: up}, {text: memory, right: true},
+			{text: size(diskUsage(filepath.Join(cfg.DataDir, "projects", proj.Name))), right: true}, {text: strings.Join(urls, ", "), color: blue}})
+	}
+	table(out, "  ", apps)
+
+	// Where everything is: Sideyard's files, then each app's.
+	files := [][]cell{{{text: paint(bold, "SIDEYARD")}}}
+	item := func(label, path, size, about string) {
+		files = append(files, []cell{{text: label, color: dim}, {text: path}, {text: size, color: blue, right: true}, {text: about, color: dim}})
+	}
 	bin, err := filepath.EvalSymlinks(exe)
 	if err != nil {
 		bin = exe
 	}
-	row("  "+bin, "the program")
+	item("program", bin, size(diskUsage(bin)), "")
 	if exists(bin + ".prev") {
-		row("  "+bin+".prev", "the version before the last update")
+		item("previous", bin+".prev", size(diskUsage(bin+".prev")), "the version before the last update")
 	}
 	if link, err := exec.LookPath("sideyard"); err == nil && link != bin {
 		if target, _ := filepath.EvalSymlinks(link); target == bin {
-			row("  "+link, "a link to it, so your shell finds it")
+			item("link", link, "", "so your shell finds it")
 		}
 	}
 	if installed {
-		row("  "+svc["FragmentPath"], "the service that runs it")
+		item("service", svc["FragmentPath"], "", "")
 		for _, d := range strings.Fields(svc["DropInPaths"]) {
-			row("  "+d, "a change to the service")
+			item("", d, "", "a change to the service")
 		}
 		if envFile != "" {
-			row("  "+envFile, "its settings")
+			item("settings", envFile, "", "")
 		}
 	}
-	row("  "+cfg.DataDir+"/", "its data, "+megabytes(dirSize(cfg.DataDir))+" in all")
-	listDir(row, cfg.DataDir, map[string]string{
+	item("data", cfg.DataDir+"/", size(diskUsage(cfg.DataDir)), "")
+	listDir(item, cfg.DataDir, map[string]string{
 		"sideyard.db": "projects, releases, settings and encrypted variables",
-		"master.key":  "the key to the encrypted variables; keep a copy somewhere safe",
+		"master.key":  "the key to the encrypted variables; back it up",
 		"caddy":       "TLS certificates",
-		"projects":    "a folder for each app, below",
+		"projects":    "a folder for each app",
 	})
 	if installed {
-		row("  journalctl -u sideyard -f", "its log")
-	}
-
-	if len(projects) == 0 {
-		fmt.Fprintln(w, "\nNo apps yet.")
+		item("log", "journalctl -u sideyard -f", "", "")
 	}
 	for _, proj := range projects {
-		ref := runner.ProjectRef{ID: proj.ID, Name: proj.Name, Dir: filepath.Join(cfg.DataDir, "projects", proj.Name)}
-		head := proj.Name + ": " + appState(proj)
-		for _, host := range domains[proj.ID] {
-			head += ", " + siteURL(cfg, host)
-		}
-		fmt.Fprintln(w, "\n"+head)
-		row("  "+ref.Dir+"/", megabytes(dirSize(ref.Dir))+" in all")
-		listDir(row, ref.Dir, map[string]string{
+		dir := filepath.Join(cfg.DataDir, "projects", proj.Name)
+		files = append(files, nil, []cell{{text: paint(stateColor(states[proj.ID]), "●") + " " + paint(bold, proj.Name)}})
+		item("folder", dir+"/", size(diskUsage(dir)), "")
+		listDir(item, dir, map[string]string{
 			"data":     "its database and files",
 			"releases": "its latest binaries, for rollback",
-			"run":      "the running release's environment, variables included",
+			"run":      "the running release's environment and variables",
 			"logs":     "its log",
 		})
 		if strings.HasSuffix(proj.LiveInstance, ".service") {
-			row("  "+proj.LiveInstance, "the running release")
+			item("unit", proj.LiveInstance, "", "the running release")
 		}
+		ref := runner.ProjectRef{ID: proj.ID, Name: proj.Name, Dir: dir}
 		if name := runner.UnixUser(instance, ref); instance != "" && userExists(name) {
-			row("  user "+name, "runs it, and owns data/")
-			row(fmt.Sprintf("  journalctl SIDEYARD_PROJECT_ID=%d -f", proj.ID), "its log")
+			item("user", name, "", "runs it, and owns data/")
+			item("log", fmt.Sprintf("journalctl SIDEYARD_PROJECT_ID=%d -f", proj.ID), "", "")
 		}
 	}
+	fmt.Fprintln(out)
+	table(out, "  ", files)
 	return nil
 }
 
@@ -152,38 +207,26 @@ func loadServiceEnv(unitEnv, envFile string) error {
 	return nil
 }
 
-func serviceState(installed bool, svc map[string]string) string {
-	if !installed {
-		return "not installed as a service"
-	}
-	switch svc["ActiveState"] {
-	case "active":
-		return fmt.Sprintf("running since %s (pid %s)", svc["ActiveEnterTimestamp"], svc["MainPID"])
-	case "activating", "reloading":
-		return "starting"
-	case "failed":
-		return "failed; see why: journalctl -u sideyard -n 50"
-	}
-	return "stopped; start it: sudo systemctl start sideyard"
-}
-
-func appState(p store.Project) string {
+// appState is what an app is doing, with its unit's numbers when it runs
+// as one.
+func appState(p store.Project) (string, runner.Status) {
 	switch {
 	case strings.HasSuffix(p.LiveInstance, ".service"):
-		return string(runner.UnitStatus(p.LiveInstance).State)
+		s := runner.UnitStatus(p.LiveInstance)
+		return string(s.State), s
 	case p.ActiveReleaseID == 0:
-		return "not deployed yet"
+		return "not deployed", runner.Status{}
 	case p.DesiredState == store.StateStopped:
-		return "stopped"
+		return "stopped", runner.Status{}
 	case p.LiveInstance != "":
-		return "running, inside Sideyard"
+		return "running", runner.Status{} // inside Sideyard, under the process runner
 	}
-	return "not running"
+	return "not running", runner.Status{}
 }
 
-// listDir prints a folder's entries one level down, describing the ones
-// it knows. SQLite's -wal and -shm files go with their database.
-func listDir(row func(string, string), dir string, about map[string]string) {
+// listDir adds a folder's entries, one level down, describing the ones it
+// knows. SQLite's -wal and -shm files go with their database.
+func listDir(item func(label, path, size, about string), dir string, about map[string]string) {
 	entries, _ := os.ReadDir(dir)
 	for _, e := range entries {
 		name := e.Name()
@@ -194,13 +237,127 @@ func listDir(row func(string, string), dir string, about map[string]string) {
 		if e.IsDir() {
 			label += "/"
 		}
-		row("    "+label, about[name])
+		item("", "  "+label, size(diskUsage(filepath.Join(dir, name))), about[name])
 	}
 }
 
-func dirSize(dir string) int64 {
+// --- output ---------------------------------------------------------------
+
+// The colours are the logo's, as the installer prints them; none when the
+// output isn't a terminal or NO_COLOR is set.
+var bold, dim, green, red, blue, reset string
+
+func useColors(f *os.File) {
+	if !term.IsTerminal(int(f.Fd())) || os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" {
+		return
+	}
+	bold, dim, reset = "\x1b[1m", "\x1b[2m", "\x1b[0m"
+	green, red, blue = "\x1b[32m", "\x1b[31m", "\x1b[34m"
+	if strings.Contains(os.Getenv("TERM"), "256") || os.Getenv("COLORTERM") != "" {
+		green, red, blue = "\x1b[38;5;36m", "\x1b[38;5;203m", "\x1b[38;5;33m"
+	}
+}
+
+func paint(color, s string) string {
+	if color == "" || s == "" {
+		return s
+	}
+	return color + s + reset
+}
+
+// stateColor: green for running, red for down, grey for nothing to run.
+func stateColor(state string) string {
+	switch state {
+	case string(runner.Running):
+		return green
+	case "not deployed", "not installed as a service":
+		return dim
+	}
+	return red
+}
+
+type cell struct {
+	text  string
+	color string
+	right bool   // aligned right, as numbers are
+	dot   string // the colour of a ● before the text
+}
+
+// table prints rows indented, with each column as wide as its widest cell.
+// A row of one cell is a heading, printed as it is, unindented and left out
+// of the widths; a nil row is a blank line.
+func table(w io.Writer, indent string, rows [][]cell) {
+	var widths []int
+	dots := map[int]bool{} // columns with a ● somewhere, which every row makes room for
+	for _, r := range rows {
+		if len(r) < 2 {
+			continue
+		}
+		for i, c := range r {
+			if i == len(widths) {
+				widths = append(widths, 0)
+			}
+			widths[i] = max(widths[i], utf8.RuneCountInString(c.text))
+			dots[i] = dots[i] || c.dot != ""
+		}
+	}
+	for _, r := range rows {
+		if len(r) < 2 {
+			if len(r) == 1 {
+				fmt.Fprint(w, r[0].text)
+			}
+			fmt.Fprintln(w)
+			continue
+		}
+		for len(r) > 0 && r[len(r)-1].text == "" {
+			r = r[:len(r)-1]
+		}
+		var b strings.Builder
+		b.WriteString(indent)
+		for i, c := range r {
+			if dots[i] {
+				if c.dot != "" {
+					b.WriteString(paint(c.dot, "●") + " ")
+				} else {
+					b.WriteString("  ")
+				}
+			}
+			pad := strings.Repeat(" ", widths[i]-utf8.RuneCountInString(c.text))
+			switch {
+			case c.right:
+				b.WriteString(pad + paint(c.color, c.text))
+			case i < len(r)-1:
+				b.WriteString(paint(c.color, c.text) + pad)
+			default:
+				b.WriteString(paint(c.color, c.text))
+			}
+			if i < len(r)-1 {
+				b.WriteString("   ")
+			}
+		}
+		fmt.Fprintln(w, b.String())
+	}
+}
+
+func size(n int64) string { return platform.HumanBytes(n) }
+
+func uptime(since time.Time) string {
+	d := time.Since(since)
+	switch {
+	case d < time.Minute:
+		return fmt.Sprintf("%ds", int(d.Seconds()))
+	case d < time.Hour:
+		return fmt.Sprintf("%dm", int(d.Minutes()))
+	case d < 24*time.Hour:
+		return fmt.Sprintf("%dh %dm", int(d.Hours()), int(d.Minutes())%60)
+	}
+	return fmt.Sprintf("%dd %dh", int(d.Hours())/24, int(d.Hours())%24)
+}
+
+// diskUsage is the size of a file, or of everything in a folder.
+func diskUsage(path string) int64 {
 	var n int64
-	filepath.WalkDir(dir, func(_ string, d fs.DirEntry, err error) error {
+	filepath.WalkDir(path, func(_ string, d fs.DirEntry, err error) error {
 		if err == nil && d.Type().IsRegular() {
 			if info, err := d.Info(); err == nil {
 				n += info.Size()
@@ -211,7 +368,13 @@ func dirSize(dir string) int64 {
 	return n
 }
 
-func megabytes(n int64) string { return fmt.Sprintf("%.1f MB", float64(n)/(1<<20)) }
+func freeSpace(dir string) (int64, bool) {
+	var s syscall.Statfs_t
+	if err := syscall.Statfs(dir, &s); err != nil {
+		return 0, false
+	}
+	return int64(uint64(s.Bavail) * uint64(s.Bsize)), true
+}
 
 func exists(path string) bool {
 	_, err := os.Stat(path)

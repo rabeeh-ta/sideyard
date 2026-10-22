@@ -239,7 +239,7 @@ func (p *Platform) runBackup(client *s3.Client, st storedBackups, run store.Back
 		done++
 		run.Files++
 		run.Bytes += size
-		fmt.Fprintf(&logb, "%s → %s (%s)\n", label, key, humanBytes(size))
+		fmt.Fprintf(&logb, "%s → %s (%s)\n", label, key, HumanBytes(size))
 		if n, err := pruneBackups(ctx, client, dir, time.Duration(st.RetentionDays)*24*time.Hour); err != nil {
 			fmt.Fprintf(&logb, "  couldn't prune old copies: %v\n", err)
 		} else if n > 0 {
@@ -449,7 +449,8 @@ func (p *Platform) BackupURL(ctx context.Context, name, dbPath, key string) (str
 	return client.PresignGet(ctx, key, 5*time.Minute)
 }
 
-func humanBytes(n int64) string {
+// HumanBytes formats a size for people: 512 B, 14 KB, 3.2 MB, 1.1 GB.
+func HumanBytes(n int64) string {
 	switch {
 	case n >= 1<<30:
 		return fmt.Sprintf("%.1f GB", float64(n)/(1<<30))
