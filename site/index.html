@@ -14,6 +14,12 @@
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='6' height='6' rx='1.5' fill='%2322c17a'/%3E%3Crect x='9' y='1' width='6' height='6' rx='1.5' fill='%23ff4f4f'/%3E%3Crect x='1' y='9' width='6' height='6' rx='1.5' fill='%232f7bff'/%3E%3Crect x='9' y='9' width='6' height='6' rx='1.5' fill='%23ffc21a'/%3E%3C/svg%3E"
     />
+    <script>
+      try {
+        const t = localStorage.getItem('sideyard-theme')
+        if (['light', 'dark', 'grape', 'sky'].includes(t)) document.documentElement.dataset.theme = t
+      } catch {}
+    </script>
     <style>
       :root {
         --bg: #fff3e4;
@@ -46,8 +52,10 @@
         --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
         color-scheme: light;
       }
+      /* Four styles: cream (light) and night (dark) follow the system; the
+         hero badge's dots cycle through all four and set data-theme. */
       @media (prefers-color-scheme: dark) {
-        :root:not([data-theme='light']) {
+        :root:not([data-theme]) {
           --bg: #121212;
           --bg-2: #181818;
           --card: #1c1c1c;
@@ -65,6 +73,72 @@
           --sel-ink: #ffffff;
           color-scheme: dark;
         }
+      }
+      :root[data-theme='dark'] {
+        --bg: #121212;
+        --bg-2: #181818;
+        --card: #1c1c1c;
+        --ink: #ffffff;
+        --ink-2: #a8a8a8;
+        --ink-3: #6e6e6e;
+        --line: #2a2a2a;
+        --mark: #8f2f7c;
+        --mark-2: #12643f;
+        --chart-hi: #22a85f;
+        --chart-lo: #6b6b6b;
+        --cta: #22c17a;
+        --cta-ink: #0d1912;
+        --sel: #3a3a3a;
+        --sel-ink: #ffffff;
+        color-scheme: dark;
+      }
+      :root[data-theme='grape'] {
+        --bg: #150f29;
+        --bg-2: #1d1638;
+        --card: #1f1840;
+        --ink: #f5f0ff;
+        --ink-2: #b9addb;
+        --ink-3: #8174a8;
+        --line: #322a57;
+        --mark: #7a2fa8;
+        --mark-2: #1e6b55;
+        --chart-hi: #d05abb;
+        --chart-lo: #5f5791;
+        --cta: #f48fe0;
+        --cta-ink: #1d0b24;
+        --sel: #3a3066;
+        --sel-ink: #ffffff;
+        color-scheme: dark;
+      }
+      :root[data-theme='sky'] {
+        --bg: #eef3ff;
+        --bg-2: #dfe8ff;
+        --card: #ffffff;
+        --ink: #0f1933;
+        --ink-2: #4a5677;
+        --ink-3: #8a94b0;
+        --line: #d5def5;
+        --mark: #ffd84d;
+        --mark-2: #b8f0d0;
+        --chart-hi: #2f6bff;
+        --chart-lo: #9aa6c4;
+        --cta: #2f6bff;
+        --cta-ink: #ffffff;
+        --sel: #0f1933;
+        --sel-ink: #ffffff;
+        color-scheme: light;
+      }
+      /* While switching styles, colours ease instead of jumping. */
+      html.theming,
+      html.theming * {
+        transition:
+          background-color 0.4s,
+          color 0.4s,
+          border-color 0.4s,
+          box-shadow 0.4s,
+          fill 0.4s,
+          stroke 0.4s,
+          stop-color 0.4s !important;
       }
 
       * {
@@ -255,6 +329,29 @@
       .dots {
         display: inline-flex;
         gap: 3px;
+        padding: 4px;
+        margin: -4px;
+        border: 0;
+        border-radius: 6px;
+        background: none;
+        cursor: pointer;
+      }
+      .dots i {
+        transition: transform 0.2s;
+      }
+      .dots:hover i:nth-child(odd) {
+        transform: translateY(-1px);
+      }
+      .dots:hover i:nth-child(even) {
+        transform: translateY(1px);
+      }
+      .dots.pop i {
+        animation: dot-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--i) * 60ms);
+      }
+      @keyframes dot-pop {
+        40% {
+          transform: scale(1.5);
+        }
       }
       .dots i {
         width: 10px;
@@ -1377,7 +1474,7 @@
         --bin-shadow: rgba(42, 33, 28, 0.32);
       }
       @media (prefers-color-scheme: dark) {
-        :root:not([data-theme='light']) .trash {
+        :root:not([data-theme]) .trash {
           --bin-hi: #3a3a3a;
           --bin-lo: #1c1c1c;
           --bin-rim: #484848;
@@ -1393,6 +1490,36 @@
           --bin-shade: rgba(0, 0, 0, 0.3);
           --bin-shadow: rgba(0, 0, 0, 0.75);
         }
+      }
+      :root[data-theme='sky'] .trash {
+        --bin-hi: #e6ecf8;
+        --bin-lo: #b7c2d9;
+        --bin-rim: #f1f5fc;
+        --bin-in-hi: #5d6a88;
+        --bin-in-lo: #333d57;
+        --bin-lid-hi: #eef2fa;
+        --bin-lid-lo: #d3dcee;
+        --bin-lid-side: #bcc7dd;
+        --bin-handle: #a7b3cc;
+        --bin-shade: rgba(33, 52, 94, 0.16);
+        --bin-shadow: rgba(15, 25, 51, 0.3);
+      }
+      :root[data-theme='dark'] .trash,
+      :root[data-theme='grape'] .trash {
+        --bin-hi: #3a3a3a;
+        --bin-lo: #1c1c1c;
+        --bin-rim: #484848;
+        --bin-in-hi: #1a1a1a;
+        --bin-in-lo: #0e0e0e;
+        --bin-lid-hi: #434343;
+        --bin-lid-lo: #313131;
+        --bin-lid-side: #262626;
+        --bin-handle: #555555;
+        --bin-lip: rgba(255, 255, 255, 0.28);
+        --bin-rib: rgba(255, 255, 255, 0.07);
+        --bin-sheen: rgba(255, 255, 255, 0.06);
+        --bin-shade: rgba(0, 0, 0, 0.3);
+        --bin-shadow: rgba(0, 0, 0, 0.75);
       }
       .trash-stage {
         position: sticky;
@@ -1726,7 +1853,7 @@
     <main id="top">
       <div class="wrap hero">
         <span class="pill"
-          ><span class="dots"><i style="background: var(--green)"></i><i style="background: var(--red)"></i><i style="background: var(--blue)"></i><i style="background: var(--yellow)"></i></span
+          ><button class="dots" type="button" aria-label="Change the page's colors" data-theme-dots><i style="--i: 0; background: var(--green)"></i><i style="--i: 1; background: var(--red)"></i><i style="--i: 2; background: var(--blue)"></i><i style="--i: 3; background: var(--yellow)"></i></button
           >Self-hosted, for the apps you build with AI</span
         >
         <h1>One home for every app you <mark>vibe-code</mark>.</h1>
@@ -2319,6 +2446,26 @@
         })
       })
       if (location.hash === '#migrate') select(tabs[1])
+
+      // Easter egg: the hero badge's four dots cycle the page through four colour styles.
+      const THEMES = ['light', 'dark', 'grape', 'sky']
+      const themeDots = document.querySelector('[data-theme-dots]')
+      themeDots.addEventListener('click', () => {
+        const root = document.documentElement
+        const now = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        const next = THEMES[(THEMES.indexOf(now) + 1) % THEMES.length]
+        if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          root.classList.add('theming')
+          setTimeout(() => root.classList.remove('theming'), 450)
+          themeDots.classList.remove('pop')
+          void themeDots.offsetWidth
+          themeDots.classList.add('pop')
+        }
+        root.dataset.theme = next
+        try {
+          localStorage.setItem('sideyard-theme', next)
+        } catch {}
+      })
 
       // The start card at the top: one click copies the prompt for the kind of project.
       const STARTERS = {
