@@ -202,10 +202,10 @@ export function Menu({
 export function Logo({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
-      <rect x="1" y="1" width="6" height="6" rx="1.5" fill="var(--brand)" />
-      <rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".35" />
-      <rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".35" />
-      <rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".35" />
+      <rect x="1" y="1" width="6" height="6" rx="1.6" fill="#22c17a" />
+      <rect x="9" y="1" width="6" height="6" rx="1.6" fill="#ff4f4f" />
+      <rect x="1" y="9" width="6" height="6" rx="1.6" fill="#2f7bff" />
+      <rect x="9" y="9" width="6" height="6" rx="1.6" fill="#ffc21a" />
     </svg>
   )
 }
