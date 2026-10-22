@@ -124,58 +124,48 @@ func status() error {
 
 	// Where everything is: Sideyard's files, then each app's.
 	files := [][]cell{{{text: paint(bold, "SIDEYARD")}}}
-	item := func(label, path, size, about string) {
-		files = append(files, []cell{{text: label, color: dim}, {text: path}, {text: size, color: blue, right: true}, {text: about, color: dim}})
+	item := func(label, path, size string) {
+		files = append(files, []cell{{text: label, color: dim}, {text: path}, {text: size, color: blue, right: true}})
 	}
 	bin, err := filepath.EvalSymlinks(exe)
 	if err != nil {
 		bin = exe
 	}
-	item("program", bin, size(diskUsage(bin)), "")
+	item("program", bin, size(diskUsage(bin)))
 	if exists(bin + ".prev") {
-		item("previous", bin+".prev", size(diskUsage(bin+".prev")), "the version before the last update")
+		item("previous", bin+".prev", size(diskUsage(bin+".prev")))
 	}
 	if link, err := exec.LookPath("sideyard"); err == nil && link != bin {
 		if target, _ := filepath.EvalSymlinks(link); target == bin {
-			item("link", link, "", "so your shell finds it")
+			item("link", link, "")
 		}
 	}
 	if installed {
-		item("service", svc["FragmentPath"], "", "")
+		item("service", svc["FragmentPath"], "")
 		for _, d := range strings.Fields(svc["DropInPaths"]) {
-			item("", d, "", "a change to the service")
+			item("drop-in", d, "")
 		}
 		if envFile != "" {
-			item("settings", envFile, "", "")
+			item("settings", envFile, "")
 		}
 	}
-	item("data", cfg.DataDir+"/", size(diskUsage(cfg.DataDir)), "")
-	listDir(item, cfg.DataDir, map[string]string{
-		"sideyard.db": "projects, releases, settings and encrypted variables",
-		"master.key":  "the key to the encrypted variables; back it up",
-		"caddy":       "TLS certificates",
-		"projects":    "a folder for each app",
-	})
+	item("data", cfg.DataDir+"/", size(diskUsage(cfg.DataDir)))
+	listDir(item, cfg.DataDir)
 	if installed {
-		item("log", "journalctl -u sideyard -f", "", "")
+		item("log", "journalctl -u sideyard -f", "")
 	}
 	for _, proj := range projects {
 		dir := filepath.Join(cfg.DataDir, "projects", proj.Name)
 		files = append(files, nil, []cell{{text: paint(stateColor(states[proj.ID]), "●") + " " + paint(bold, proj.Name)}})
-		item("folder", dir+"/", size(diskUsage(dir)), "")
-		listDir(item, dir, map[string]string{
-			"data":     "its database and files",
-			"releases": "its latest binaries, for rollback",
-			"run":      "the running release's environment and variables",
-			"logs":     "its log",
-		})
+		item("folder", dir+"/", size(diskUsage(dir)))
+		listDir(item, dir)
 		if strings.HasSuffix(proj.LiveInstance, ".service") {
-			item("unit", proj.LiveInstance, "", "the running release")
+			item("unit", proj.LiveInstance, "")
 		}
 		ref := runner.ProjectRef{ID: proj.ID, Name: proj.Name, Dir: dir}
 		if name := runner.UnixUser(instance, ref); instance != "" && userExists(name) {
-			item("user", name, "", "runs it, and owns data/")
-			item("log", fmt.Sprintf("journalctl SIDEYARD_PROJECT_ID=%d -f", proj.ID), "", "")
+			item("user", name, "")
+			item("log", fmt.Sprintf("journalctl SIDEYARD_PROJECT_ID=%d -f", proj.ID), "")
 		}
 	}
 	fmt.Fprintln(out)
@@ -224,20 +214,15 @@ func appState(p store.Project) (string, runner.Status) {
 	return "not running", runner.Status{}
 }
 
-// listDir adds a folder's entries, one level down, describing the ones it
-// knows. SQLite's -wal and -shm files go with their database.
-func listDir(item func(label, path, size, about string), dir string, about map[string]string) {
+// listDir adds what's in a folder, one level down.
+func listDir(item func(label, path, size string), dir string) {
 	entries, _ := os.ReadDir(dir)
 	for _, e := range entries {
 		name := e.Name()
-		if strings.HasSuffix(name, "-wal") || strings.HasSuffix(name, "-shm") {
-			continue
-		}
-		label := name
 		if e.IsDir() {
-			label += "/"
+			name += "/"
 		}
-		item("", "  "+label, size(diskUsage(filepath.Join(dir, name))), about[name])
+		item("", "  "+name, size(diskUsage(filepath.Join(dir, e.Name()))))
 	}
 }
 
