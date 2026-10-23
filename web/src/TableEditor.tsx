@@ -80,6 +80,8 @@ export function TableEditor({ name, table }: { name: string; table?: string }) {
   )
   const [search, setSearch] = useState('')
   const [panel, setPanel] = useState<Panel>(null)
+  // Kept here, not in TableView, so Structure stays open while you move between tables.
+  const [view, setView] = useState<'data' | 'structure'>('data')
   const info = schema?.find((t) => t.name === table) ?? null
   const reloadSchema = () => setSchemaVersion((v) => v + 1)
   const open = (t: string) => go(`/p/${encodeURIComponent(name)}/tables/${encodeURIComponent(t)}`)
@@ -141,6 +143,8 @@ export function TableEditor({ name, table }: { name: string; table?: string }) {
             name={name}
             path={db.path}
             info={info}
+            view={view}
+            setView={setView}
             panel={panel}
             setPanel={setPanel}
             onSchemaChange={reloadSchema}
@@ -187,6 +191,8 @@ function TableView({
   name,
   path,
   info,
+  view,
+  setView,
   panel,
   setPanel,
   onSchemaChange,
@@ -197,6 +203,8 @@ function TableView({
   name: string
   path: string
   info: TableInfo
+  view: 'data' | 'structure'
+  setView: (v: 'data' | 'structure') => void
   panel: Panel
   setPanel: (p: Panel) => void
   onSchemaChange: () => void
@@ -204,7 +212,6 @@ function TableView({
   onRenamed: (table: string) => void
   onDropped: () => void
 }) {
-  const [view, setView] = useState<'data' | 'structure'>('data')
   const [sort, setSort] = useState<SortColumn[]>([])
   const [filters, setFilters] = useState<Filter[]>([])
   const [draft, setDraft] = useState<Filter[] | null>(null)
