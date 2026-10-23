@@ -110,7 +110,7 @@ Everything lives in `/var/lib/sideyard`:
 
 App logs live in journald, not in this folder.
 
-Set up off-server backups in **Platform settings → Backups**: connect an S3-compatible bucket (one used only for backups) and Sideyard copies `sideyard.db` and every app's databases to it on a schedule. Then use **Platform settings → Security → Download master key** and keep the key somewhere safe away from the server; it isn't uploaded with the backups.
+Set up off-server backups in **Platform settings → Backups**: connect a bucket on AWS S3, Cloudflare R2, Backblaze B2, DigitalOcean Spaces or any S3-compatible service (one used only for backups) and Sideyard copies `sideyard.db` and every app's databases to it on a schedule. Then use **Platform settings → Security → Download master key** and keep the key somewhere safe away from the server; it isn't uploaded with the backups.
 
 To rebuild a dead server: install Sideyard, stop it, put your saved `master.key` and the latest `sideyard.db` copy (gunzipped) in `/var/lib/sideyard`, start it, then redeploy each app from CI and restore its database from **Database → Backups in S3**.
 

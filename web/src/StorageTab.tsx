@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from 'react'
 import { api, errorMessage, type S3Object, type StorageInfo, type StorageInput } from './api'
 import { formatBytes, timeAgo, usePoll } from './lib'
 import { ConfirmButton, Section } from './ui'
+import { BucketFields } from './BucketFields'
 
 export function StorageTab({ name }: { name: string }) {
   const { data: info, error, reload } = usePoll(() => api.storage(name), 0, name)
@@ -45,8 +46,6 @@ function ConnectForm({
   })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const set = (k: keyof StorageInput) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm({ ...form, [k]: e.target.value })
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -68,50 +67,18 @@ function ConnectForm({
       title={info.connected ? 'Edit bucket' : 'Connect a bucket'}
       description={
         <>
-          Any S3-compatible bucket (R2, B2, AWS S3, MinIO), with an access key that can reach <strong>only that bucket</strong>.
-          The app gets the details as variables.
+          A bucket from any S3-compatible provider, with an access key that can reach <strong>only that bucket</strong>. The
+          app gets the details as variables.
         </>
       }
     >
       <form onSubmit={submit} className="stack">
-        <div className="grid2">
-          <label className="field span2">
-            <span>Endpoint</span>
-            <input
-              value={form.endpoint}
-              onChange={set('endpoint')}
-              placeholder="https://<account-id>.r2.cloudflarestorage.com"
-              spellCheck={false}
-            />
-            <small className="muted">
-              R2: <code>https://&lt;account-id&gt;.r2.cloudflarestorage.com</code> · B2:{' '}
-              <code>https://s3.&lt;region&gt;.backblazeb2.com</code> · AWS: leave empty and set the region.
-            </small>
-          </label>
-          <label className="field">
-            <span>Bucket</span>
-            <input value={form.bucket} onChange={set('bucket')} required spellCheck={false} />
-          </label>
-          <label className="field">
-            <span>Region</span>
-            <input value={form.region} onChange={set('region')} placeholder="auto" spellCheck={false} />
-          </label>
-          <label className="field">
-            <span>Access key ID</span>
-            <input value={form.accessKey} onChange={set('accessKey')} required spellCheck={false} autoComplete="off" />
-          </label>
-          <label className="field">
-            <span>Secret access key</span>
-            <input
-              type="password"
-              value={form.secretKey}
-              onChange={set('secretKey')}
-              required={!info.connected}
-              placeholder={info.connected ? 'saved; leave empty to keep it' : ''}
-              autoComplete="new-password"
-            />
-          </label>
-        </div>
+        <BucketFields
+          value={form}
+          onChange={(v) => setForm({ ...v, secretKey: v.secretKey ?? '' })}
+          secretSaved={info.connected}
+          required
+        />
         {error && <p className="error">{error}</p>}
         <div className="inline-form">
           <button className="primary" disabled={busy}>

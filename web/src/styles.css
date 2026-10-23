@@ -2125,6 +2125,28 @@ a.usage:hover strong {
   background: var(--green-bg);
 }
 
+.bucket-fields {
+  margin-top: 0;
+}
+
+.bucket-fields .chips {
+  margin-top: 0;
+}
+
+.bucket-fields .chip {
+  font-size: 13px;
+  padding: 4px 11px;
+}
+
+.bucket-fields .derived {
+  margin-top: -6px;
+  min-width: 0;
+}
+
+.bucket-fields .derived code {
+  word-break: break-all;
+}
+
 .db-picker {
   display: flex;
   align-items: center;

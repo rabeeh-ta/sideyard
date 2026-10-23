@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { api, errorMessage, type BackupSettings, type EmailSettings } from './api'
 import { duration, formatBytes, formatDate, saveBlob, timeAgo, usePoll } from './lib'
 import { Pill, Section } from './ui'
+import { BucketFields } from './BucketFields'
 import { UpdatesSection } from './Updates'
 import { useServer } from './App'
 
@@ -110,39 +111,13 @@ function BackupsSection({ initial, onSaved }: { initial: BackupSettings; onSaved
           <input type="checkbox" checked={form.enabled} onChange={(e) => set('enabled', e.target.checked)} /> Back up
           automatically
         </label>
-        <div className="grid2">
-          <label className="field span2">
-            <span>Endpoint</span>
-            <input
-              value={form.endpoint}
-              onChange={(e) => set('endpoint', e.target.value)}
-              placeholder="https://<account-id>.r2.cloudflarestorage.com (empty for AWS)"
-              spellCheck={false}
-            />
-          </label>
-          <label className="field">
-            <span>Bucket</span>
-            <input value={form.bucket} onChange={(e) => set('bucket', e.target.value)} spellCheck={false} />
-          </label>
-          <label className="field">
-            <span>Region</span>
-            <input value={form.region} onChange={(e) => set('region', e.target.value)} placeholder="auto" spellCheck={false} />
-          </label>
-          <label className="field">
-            <span>Access key ID</span>
-            <input value={form.accessKey} onChange={(e) => set('accessKey', e.target.value)} spellCheck={false} autoComplete="off" />
-          </label>
-          <label className="field">
-            <span>Secret access key</span>
-            <input
-              type="password"
-              value={form.secretKey}
-              onChange={(e) => set('secretKey', e.target.value)}
-              placeholder={initial.hasSecret ? 'saved; leave empty to keep it' : ''}
-              autoComplete="new-password"
-            />
-          </label>
-        </div>
+        <BucketFields
+          // A saved change reloads the settings; start again from them.
+          key={`${initial.endpoint}|${initial.region}`}
+          value={form}
+          onChange={(v) => setForm({ ...form, ...v })}
+          secretSaved={initial.hasSecret}
+        />
         <div className="grid3">
           <label className="field">
             <span>Folder in the bucket</span>
