@@ -63,7 +63,7 @@ curl -fsSL https://github.com/rabeeh-ta/sideyard/releases/latest/download/instal
 
 Sign in, create a project, and follow the "Connect deploys" steps it shows. New apps start from [`templates/starter`](../templates/starter).
 
-To move an existing app with its data, create the project, use **Database → Import** to upload its SQLite file to the path the app expects (for example `data/esphog.db`), then deploy. Make the copy with `sqlite3 app.db ".backup copy.db"` so it's consistent even while the old app runs.
+To move an existing app with its data, create the project, use **Database → Add a database** to upload its SQLite file to the path the app expects (for example `data/esphog.db`), then deploy. Make the copy with `sqlite3 app.db ".backup copy.db"` so it's consistent even while the old app runs.
 
 ## Updates
 
