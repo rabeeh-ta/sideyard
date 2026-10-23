@@ -80,7 +80,11 @@ gh variable set SIDEYARD_PROJECT --body "${name}"${arch !== 'amd64' ? `
 gh variable set SIDEYARD_ARCH --body "${arch}"` : ''}`}</CodeBlock>
 
       <h4>Or from your laptop</h4>
-      <CodeBlock>{`CGO_ENABLED=0 GOOS=linux GOARCH=${arch} go build -o app .
+      <p className="muted">
+        Build the frontend first: the binary embeds whatever is in <code>web/dist</code>.
+      </p>
+      <CodeBlock>{`(cd web && npm ci && npm run build) &&
+CGO_ENABLED=0 GOOS=linux GOARCH=${arch} go build -o app . &&
 curl --fail-with-body -H "Authorization: Bearer ${token}" \\
   -F binary=@app -F commit=$(git rev-parse --short HEAD) --form-string "message=$(git log -1 --format=%s)" \\
   ${url}/api/projects/${name}/deploys`}</CodeBlock>
