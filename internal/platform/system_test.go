@@ -114,7 +114,7 @@ func TestUpdate(t *testing.T) {
 	if st := plain.UpdateStatus(); st.Source != "" || st.Available {
 		t.Fatalf("a build without a source: %+v", st)
 	}
-	if err := plain.InstallUpdate(); !errors.Is(err, ErrValidation) {
+	if err := plain.InstallUpdate(""); !errors.Is(err, ErrValidation) {
 		t.Fatalf("install without a source: %v", err)
 	}
 
@@ -124,8 +124,16 @@ func TestUpdate(t *testing.T) {
 	if st := p.CheckForUpdate(context.Background()); st.Latest != "v1.1.0" || st.Available || st.Error != "" {
 		t.Fatalf("up to date: %+v", st)
 	}
-	if err := p.InstallUpdate(); !errors.Is(err, ErrValidation) {
+	if err := p.InstallUpdate(""); !errors.Is(err, ErrValidation) {
 		t.Fatalf("install when up to date: %v", err)
+	}
+	// A resent request for the version already running (its first answer
+	// was cut off by the restart) succeeds without installing anything.
+	if err := p.InstallUpdate("v1.1.0"); err != nil {
+		t.Fatalf("resent install of the running version: %v", err)
+	}
+	if st := p.UpdateStatus(); st.State != "idle" {
+		t.Fatalf("a resent install started something: %+v", st)
 	}
 
 	p.version = "v1.0.0"
@@ -138,8 +146,12 @@ func TestUpdate(t *testing.T) {
 	if !st.Available || !st.AutoInstall || st.State != "idle" {
 		t.Fatalf("before install: %+v", st)
 	}
-	if err := p.InstallUpdate(); err != nil {
+	if err := p.InstallUpdate("v1.1.0"); err != nil {
 		t.Fatal(err)
+	}
+	// A second request for the same version while it installs is the same request.
+	if err := p.InstallUpdate("v1.1.0"); err != nil {
+		t.Fatalf("resent install while installing: %v", err)
 	}
 	select {
 	case <-p.RestartRequested():

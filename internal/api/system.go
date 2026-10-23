@@ -38,9 +38,16 @@ func (s *Server) checkForUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 // installUpdate starts the install and answers at once; the dashboard
-// follows it through updateStatus, then waits out the restart.
+// follows it through updateStatus, then waits out the restart. The body
+// may name the version being installed, {"version": "v1.2.3"}.
 func (s *Server) installUpdate(w http.ResponseWriter, r *http.Request) {
-	if err := s.p.InstallUpdate(); err != nil {
+	var body struct {
+		Version string `json:"version"`
+	}
+	if r.ContentLength != 0 && !readJSON(w, r, &body) {
+		return
+	}
+	if err := s.p.InstallUpdate(body.Version); err != nil {
 		writeErr(w, err)
 		return
 	}

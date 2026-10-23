@@ -153,12 +153,23 @@ func (p *Platform) CheckForUpdate(ctx context.Context) UpdateStatus {
 
 // InstallUpdate installs the newest release found by the last check, in the
 // background. Watch UpdateStatus for progress; on success Sideyard restarts.
-func (p *Platform) InstallUpdate() error {
+// InstallUpdate starts installing the newest release. version is the
+// release the dashboard asked for, if it said: when Sideyard is already
+// installing or running it, the request is one answered before. A browser
+// resends a request whose answer the restart cut off, so that succeeds
+// rather than reporting nothing newer.
+func (p *Platform) InstallUpdate(version string) error {
 	if p.cfg.UpdateSource == "" {
 		return invalid("this build has no release source to update from")
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	if version != "" {
+		installing := (p.upd.installing || p.upd.restarting) && p.upd.latest != nil && p.upd.latest.Version == version
+		if version == p.version || installing {
+			return nil
+		}
+	}
 	switch {
 	case p.upd.installing || p.upd.restarting:
 		return fmt.Errorf("%w: an update is already being installed", ErrConflict)
@@ -248,7 +259,7 @@ func (p *Platform) updateLoop() {
 		st := p.CheckForUpdate(p.bg)
 		failedBefore := st.RolledBack != nil && st.RolledBack.To == st.Latest
 		if st.Available && st.AutoInstall && p.version != "dev" && !failedBefore {
-			if err := p.InstallUpdate(); err != nil && !errors.Is(err, store.ErrConflict) {
+			if err := p.InstallUpdate(""); err != nil && !errors.Is(err, store.ErrConflict) {
 				log.Printf("sideyard: automatic update: %v", err)
 			}
 		}

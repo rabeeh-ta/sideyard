@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AlertCircle, ArrowUpCircle, CheckCircle2, CircleDashed, RefreshCw } from 'lucide-react'
-import { api, errorMessage, type UpdateStatus } from './api'
+import { ApiError, api, errorMessage, type UpdateStatus } from './api'
 import { useServer } from './App'
 import { formatDate, timeAgo } from './lib'
 
@@ -17,8 +17,9 @@ export function UpdatesSection({ focus }: { focus: boolean }) {
   const [st, setSt] = useState<UpdateStatus | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState<'check' | 'install' | null>(null)
-  // The version an install is restarting away from.
-  const [leaving, setLeaving] = useState<{ from: string; since: number } | null>(null)
+  // The version an install is restarting away from. unsure: the request to
+  // start it got no answer, so it may not have reached Sideyard.
+  const [leaving, setLeaving] = useState<{ from: string; since: number; unsure?: boolean } | null>(null)
   const [slow, setSlow] = useState(false)
   const ref = useRef<HTMLElement>(null)
 
@@ -48,7 +49,8 @@ export function UpdatesSection({ focus }: { focus: boolean }) {
         if (s.current !== leaving.from) {
           window.location.reload() // the new version is up, with its own dashboard
         } else if (s.state === 'idle') {
-          setLeaving(null) // the install failed; s.error says why
+          setLeaving(null) // the install failed, and s.error says why, or it never started
+          if (leaving.unsure && !s.error) setError("The install didn't start: the connection dropped. Try again.")
         }
       } catch {
         // Sideyard is restarting
@@ -71,14 +73,18 @@ export function UpdatesSection({ focus }: { focus: boolean }) {
   }
 
   async function install() {
-    if (!st) return
+    if (!st?.latest) return
+    const from = st.current
     setBusy('install')
     setError(null)
     try {
-      setSt(await api.installUpdate())
-      setLeaving({ from: st.current, since: Date.now() })
+      setSt(await api.installUpdate(st.latest))
+      setLeaving({ from, since: Date.now() })
     } catch (e) {
-      setError(errorMessage(e))
+      // No answer at all: the restart may have cut it off, so follow the
+      // install as if it started; the status says whether it did.
+      if (e instanceof ApiError) setError(errorMessage(e))
+      else setLeaving({ from, since: Date.now(), unsure: true })
     } finally {
       setBusy(null)
     }
