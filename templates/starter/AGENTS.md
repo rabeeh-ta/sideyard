@@ -29,7 +29,7 @@ Send with `sendEmail` in `email.go`. It posts to Sideyard's API with the app's t
 
 ## Files and uploads
 
-User uploads and large files go in the project's bucket, with small metadata in SQLite. Connecting a bucket in the dashboard's Storage tab sets `AWS_ENDPOINT_URL_S3`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `S3_BUCKET`; the AWS SDK for Go v2 reads the `AWS_` ones by itself.
+User uploads and large files go in the project's bucket, with small metadata in SQLite. Connecting a bucket in the dashboard's Storage tab sets `AWS_ENDPOINT_URL_S3`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `S3_BUCKET`; the AWS SDK for Go v2 reads the `AWS_` ones by itself. The bucket may be any S3-compatible service, so give the S3 client `UsePathStyle` when the endpoint isn't AWS's, and `RequestChecksumCalculation` and `ResponseChecksumValidation` set to `WhenRequired` (newer SDKs send checksums some of these services reject). Stream uploads to the bucket with the SDK's upload manager rather than reading them into memory, and serve files through the app or with presigned URLs; the bucket itself stays private.
 
 ## Checks before finishing a change
 
