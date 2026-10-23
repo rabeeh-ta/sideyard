@@ -107,6 +107,24 @@ func TestAPI(t *testing.T) {
 	}
 	c.do("GET", "/api/server/metrics?range=6h", nil, 200)
 	c.do("GET", "/api/projects/demo/metrics?range=24h", nil, 200)
+
+	// SQL Editor queries are kept per project; saving one again replaces it
+	// in place.
+	c.do("PUT", "/api/projects/demo/queries/q-1", map[string]string{"name": "First", "sql": "SELECT 1"}, 204)
+	c.do("PUT", "/api/projects/demo/queries/q-2", map[string]string{"name": "Second", "sql": "SELECT 2"}, 204)
+	c.do("PUT", "/api/projects/demo/queries/q-1", map[string]string{"name": "First", "sql": "SELECT 11"}, 204)
+	c.do("PUT", "/api/projects/demo/queries/bad%20id", map[string]string{"name": "x"}, 400)
+	c.do("PUT", "/api/projects/nope/queries/q-3", map[string]string{"name": "x"}, 404)
+	var queries []platform.SavedQuery
+	json.Unmarshal(c.do("GET", "/api/projects/demo/queries", nil, 200), &queries)
+	if len(queries) != 2 || queries[0].ID != "q-2" || queries[1].SQL != "SELECT 11" {
+		t.Fatalf("saved queries: %+v", queries)
+	}
+	c.do("DELETE", "/api/projects/demo/queries/q-2", nil, 204)
+	json.Unmarshal(c.do("GET", "/api/projects/demo/queries", nil, 200), &queries)
+	if len(queries) != 1 || queries[0].ID != "q-1" {
+		t.Fatalf("saved queries after a delete: %+v", queries)
+	}
 	var upd platform.UpdateStatus
 	json.Unmarshal(c.do("GET", "/api/update", nil, 200), &upd)
 	if upd.Current != "dev" || upd.Source != "" || upd.State != "idle" {

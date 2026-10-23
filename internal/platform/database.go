@@ -10,10 +10,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"syscall"
 	"time"
+	"unicode/utf8"
 
 	"sideyard/internal/runner"
 	"sideyard/internal/store"
@@ -371,6 +373,56 @@ func (p *Platform) ExecSQL(ctx context.Context, name, rel, query string, write b
 		}
 	}
 	return *resp.Exec, nil
+}
+
+// SavedQuery is a query kept in the SQL Editor. Sideyard stores them, so
+// they're the same in every browser.
+type SavedQuery struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	SQL  string `json:"sql"`
+}
+
+// queryIDRe accepts the IDs the dashboard makes (crypto.randomUUID).
+var queryIDRe = regexp.MustCompile(`^[A-Za-z0-9-]{1,64}$`)
+
+func (p *Platform) SavedQueries(name string) ([]SavedQuery, error) {
+	proj, err := p.store.ProjectByName(name)
+	if err != nil {
+		return nil, err
+	}
+	saved, err := p.store.SavedQueries(proj.ID)
+	if err != nil {
+		return nil, err
+	}
+	out := []SavedQuery{}
+	for _, q := range saved {
+		out = append(out, SavedQuery(q))
+	}
+	return out, nil
+}
+
+// SaveQuery creates or replaces a saved query.
+func (p *Platform) SaveQuery(name string, q SavedQuery) error {
+	if !queryIDRe.MatchString(q.ID) {
+		return invalid("a query's ID is 1 to 64 letters, digits and dashes")
+	}
+	if utf8.RuneCountInString(q.Name) > 100 {
+		return invalid("keep the query's name to 100 characters")
+	}
+	proj, err := p.store.ProjectByName(name)
+	if err != nil {
+		return err
+	}
+	return p.store.SaveQuery(proj.ID, store.SavedQuery(q))
+}
+
+func (p *Platform) DeleteQuery(name, id string) error {
+	proj, err := p.store.ProjectByName(name)
+	if err != nil {
+		return err
+	}
+	return p.store.DeleteQuery(proj.ID, id)
 }
 
 func oneLine(s string, max int) string {

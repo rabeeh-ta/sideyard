@@ -195,6 +195,15 @@ var migrations = []string{
 		created_at INTEGER NOT NULL
 	);
 	CREATE INDEX emails_by_project ON emails (project_id, id);`,
+	`CREATE TABLE queries (
+		project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+		id TEXT NOT NULL,
+		name TEXT NOT NULL,
+		sql TEXT NOT NULL,
+		created_at INTEGER NOT NULL,
+		updated_at INTEGER NOT NULL,
+		PRIMARY KEY (project_id, id)
+	);`,
 }
 
 func (s *Store) migrate() error {

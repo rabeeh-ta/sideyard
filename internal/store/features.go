@@ -369,6 +369,50 @@ func (s *Store) EmailsSince(projectID int64, t time.Time) (int, error) {
 	return n, err
 }
 
+// --- saved queries ---
+
+// SavedQuery is a query kept in a project's SQL Editor. The dashboard picks
+// its ID, so it can save a new query before the server has answered.
+type SavedQuery struct {
+	ID   string
+	Name string
+	SQL  string
+}
+
+// SavedQueries lists a project's saved queries, newest first.
+func (s *Store) SavedQueries(projectID int64) ([]SavedQuery, error) {
+	rows, err := s.db.Query(`SELECT id, name, sql FROM queries WHERE project_id = ?
+		ORDER BY created_at DESC, rowid DESC`, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []SavedQuery
+	for rows.Next() {
+		var q SavedQuery
+		if err := rows.Scan(&q.ID, &q.Name, &q.SQL); err != nil {
+			return nil, err
+		}
+		out = append(out, q)
+	}
+	return out, rows.Err()
+}
+
+// SaveQuery creates a query or replaces its name and SQL, keeping its place
+// in the list.
+func (s *Store) SaveQuery(projectID int64, q SavedQuery) error {
+	_, err := s.db.Exec(`INSERT INTO queries (project_id, id, name, sql, created_at, updated_at)
+		VALUES (?, ?, ?, ?, unixepoch(), unixepoch())
+		ON CONFLICT (project_id, id) DO UPDATE SET name = excluded.name, sql = excluded.sql, updated_at = excluded.updated_at`,
+		projectID, q.ID, q.Name, q.SQL)
+	return err
+}
+
+func (s *Store) DeleteQuery(projectID int64, id string) error {
+	_, err := s.db.Exec(`DELETE FROM queries WHERE project_id = ? AND id = ?`, projectID, id)
+	return err
+}
+
 // Snapshot writes a consistent copy of Sideyard's own database to dst.
 func (s *Store) Snapshot(dst string) error {
 	_, err := s.db.Exec(`VACUUM INTO ?`, dst)

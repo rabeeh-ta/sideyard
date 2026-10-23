@@ -1,12 +1,15 @@
 import { useEffect, useRef } from 'react'
 import { EditorView, basicSetup } from 'codemirror'
 import { keymap } from '@codemirror/view'
-import { Compartment, EditorState, Prec } from '@codemirror/state'
+import { Annotation, Compartment, EditorState, Prec } from '@codemirror/state'
 import { sql, SQLite, type SQLNamespace } from '@codemirror/lang-sql'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
 import { closeCompletion } from '@codemirror/autocomplete'
 import type { Theme } from './lib'
+
+// Marks the document being replaced from outside, which isn't an edit.
+const replaced = Annotation.define<boolean>()
 
 // Colours chosen to read on both themes' code background.
 const highlight = HighlightStyle.define([
@@ -34,6 +37,7 @@ const chrome = EditorView.theme({
 /**
  * A SQL editor with SQLite highlighting and table/column completion.
  * onRun gets the selected text, or the whole script if nothing is selected.
+ * onChange reports typing, not a new value passed in.
  */
 export function CodeEditor({
   value,
@@ -72,7 +76,11 @@ export function CodeEditor({
           lang.current.of(sql({ dialect: SQLite, schema, upperCaseKeywords: true })),
           syntaxHighlighting(highlight),
           chrome,
-          EditorView.updateListener.of((u) => u.docChanged && handlers.current.onChange(u.state.doc.toString())),
+          EditorView.updateListener.of((u) => {
+            if (u.docChanged && !u.transactions.some((tr) => tr.annotation(replaced))) {
+              handlers.current.onChange(u.state.doc.toString())
+            }
+          }),
         ],
       }),
     })
@@ -84,7 +92,7 @@ export function CodeEditor({
   useEffect(() => {
     const v = view.current
     if (v && v.state.doc.toString() !== value) {
-      v.dispatch({ changes: { from: 0, to: v.state.doc.length, insert: value } })
+      v.dispatch({ changes: { from: 0, to: v.state.doc.length, insert: value }, annotations: replaced.of(true) })
     }
   }, [value])
 

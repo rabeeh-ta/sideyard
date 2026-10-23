@@ -219,3 +219,33 @@ func (s *Server) downloadRemoteBackup(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Redirect(w, r, u, http.StatusFound)
 }
+
+func (s *Server) savedQueries(w http.ResponseWriter, r *http.Request) {
+	queries, err := s.p.SavedQueries(r.PathValue("name"))
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, queries)
+}
+
+func (s *Server) saveQuery(w http.ResponseWriter, r *http.Request) {
+	var q platform.SavedQuery
+	if !readJSON(w, r, &q) {
+		return
+	}
+	q.ID = r.PathValue("id")
+	if err := s.p.SaveQuery(r.PathValue("name"), q); err != nil {
+		writeErr(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) deleteQuery(w http.ResponseWriter, r *http.Request) {
+	if err := s.p.DeleteQuery(r.PathValue("name"), r.PathValue("id")); err != nil {
+		writeErr(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

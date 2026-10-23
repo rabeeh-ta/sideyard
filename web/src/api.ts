@@ -155,6 +155,9 @@ export type Alter =
   | { kind: 'rename_table'; table: string; newName: string }
   | { kind: 'drop_table'; table: string }
 
+/** A query saved in the SQL Editor. */
+export type SavedQuery = { id: string; name: string; sql: string }
+
 export type ExecResult = {
   columns: string[]
   rows: CellValue[][]
@@ -388,6 +391,10 @@ export const api = {
   alter: (name: string, path: string, a: Alter) => request<{ sql: string }>('POST', `${p(name)}/db/alter`, { path, ...a }),
   sql: (name: string, path: string, sql: string, write: boolean) =>
     request<{ result: ExecResult; ms: number }>('POST', `${p(name)}/db/sql`, { path, sql, write }),
+  queries: (name: string) => request<SavedQuery[]>('GET', `${p(name)}/queries`),
+  saveQuery: (name: string, q: SavedQuery) =>
+    request<void>('PUT', `${p(name)}/queries/${encodeURIComponent(q.id)}`, { name: q.name, sql: q.sql }),
+  deleteQuery: (name: string, id: string) => request<void>('DELETE', `${p(name)}/queries/${encodeURIComponent(id)}`),
   metrics: (name: string, range = '1h') => request<MetricPoint[]>('GET', `${p(name)}/metrics?range=${range}`),
   serverMetrics: (range = '1h') => request<ServerPoint[]>('GET', `/api/server/metrics?range=${range}`),
   system: () => request<SystemInfo>('GET', '/api/system'),
