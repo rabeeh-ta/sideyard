@@ -327,7 +327,7 @@
       /* Hero */
       .hero {
         text-align: center;
-        padding: 72px 0 0;
+        padding-top: 72px;
       }
       .pill {
         display: inline-flex;
@@ -365,6 +365,27 @@
         width: 10px;
         height: 10px;
         border-radius: 3px;
+      }
+      /* Phones: bigger hit areas for the version badge and the dots, drawn the same */
+      @media (max-width: 640px) {
+        .version {
+          position: relative;
+        }
+        .version::after {
+          content: '';
+          position: absolute;
+          inset: -10px -4px;
+        }
+        .dots {
+          padding: 15px 8px;
+          margin: -15px -8px;
+        }
+      }
+      /* The narrowest phones: the header holds the logo and GitHub only */
+      @media (max-width: 340px) {
+        .version {
+          display: none;
+        }
       }
       h1 {
         font-size: clamp(42px, 7.6vw, 96px);
@@ -517,6 +538,7 @@
         margin: 0;
         font-size: 15px;
         color: var(--ink-3);
+        text-wrap: balance;
       }
       .starter-foot a {
         color: var(--ink-2);
@@ -529,6 +551,12 @@
         }
         .copy-orb {
           align-self: center;
+        }
+        .starter-foot {
+          line-height: 2.5;
+        }
+        .starter-foot a {
+          padding: 10px 0;
         }
       }
 
@@ -613,7 +641,7 @@
         }
         .apps {
           grid-template-columns: repeat(4, 1fr);
-          gap: 16px 12px;
+          gap: 16px 8px;
         }
         .app .tile {
           border-radius: 16px;
@@ -807,10 +835,15 @@
       }
       @media (max-width: 860px) {
         .stack {
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
         .layer {
           min-height: 170px;
+        }
+      }
+      @media (max-width: 340px) {
+        .layer b {
+          font-size: 34px;
         }
       }
 
@@ -1075,6 +1108,12 @@
         .viewer pre {
           min-height: 0;
           height: 380px;
+        }
+      }
+      @media (max-width: 640px) {
+        /* the file name gets its own line instead of shrinking to "new-…" */
+        .viewer-bar {
+          flex-wrap: wrap;
         }
       }
 
@@ -1429,6 +1468,13 @@
           padding: 4px 0 6px;
         }
       }
+      @media (max-width: 420px) {
+        /* the metric and load filters keep one line per button and fit a 320px phone */
+        #numbers .seg button {
+          padding: 0 8px;
+          min-width: 40px;
+        }
+      }
 
       /* Free-tier catches */
       .catches-head {
@@ -1744,6 +1790,11 @@
       }
       .foot nav {
         gap: 24px;
+      }
+      @media (max-width: 640px) {
+        .foot nav a {
+          padding: 8px 0;
+        }
       }
       .wordmark {
         font-weight: 700;
