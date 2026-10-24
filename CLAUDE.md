@@ -15,6 +15,7 @@ Self-hosted PaaS: one Go binary (Caddy embedded) that runs many Go + React + SQL
 - **`/_jobs/*` is internal.** The proxy 404s it on every app domain; only Sideyard calls it, on the app's loopback port, with the app's `SIDEYARD_TOKEN`. The same token authenticates the app to the email API.
 - **Secrets in settings are write-only.** Saved credentials (variables, bucket keys, SMTP password) are sealed with `master.key`, and API responses say only whether one is set.
 - **Updates replace the running binary and `exec` it** (`internal/update`, `platform/update.go`, `reexec` in main). The binary must stay 0755 (apps' users run it as the SQLite helper) and live where the unit lets Sideyard write (`/opt/sideyard/bin`; `ProtectSystem` makes `/usr` read-only). `deploy/install.sh` is the only place the systemd unit is defined.
+- **Agents reach Sideyard at `/mcp`** with access tokens from the dashboard (`docs/mcp.md`). A token's level (`read` < `manage` < `full`) decides which tools exist for it: register a new tool at the lowest level that should have it. Whatever the app or its users wrote (logs, job output, rows) goes back wrapped by `untrusted`. Agents deploy with one-time tickets from the `deploy` tool, and `auditMCP` logs every call with variable values left out.
 - **One SQLite connection** (`SetMaxOpenConns(1)`). Fully drain a `rows` cursor before calling another store method, or the call deadlocks.
 - Caddy redirects Go's standard logger into its JSON log once loaded. Messages meant for a human at startup (the admin password) go straight to stderr.
 

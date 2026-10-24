@@ -17,6 +17,7 @@ Sideyard turns one VPS into a home for many small apps. Every app uses the same 
 | Jobs are HTTP calls from Sideyard to the app | One scheduler means no duplicate runs, and apps need no SDK: `POST /_jobs/<name>`. |
 | Backups are scheduled snapshots, not continuous replication | They reuse the consistent-snapshot path the Database tab already has and add no process per app. The cost is losing up to one interval of data if the server dies. |
 | Email goes through Sideyard's API, over SMTP to any provider | Provider credentials stay in Sideyard; apps send with their own token and each project gets a delivery log. SMTP covers every major provider with one integration. |
+| Agents work through an MCP endpoint in the same binary | One token set up once lets Claude Code or another agent create, deploy and debug apps through the same platform calls the dashboard makes. Binaries still upload over HTTP, with a one-time ticket the agent asks for. |
 | Fixed stack, permanently | Postgres, MySQL, Redis, queues, Kubernetes, mandatory Docker, other runtimes, autoscaling and GPUs are out of scope by design. New capabilities fit inside Go + React + SQLite + S3. |
 
 ## How a deploy works
@@ -94,6 +95,10 @@ The dashboard finds SQLite files in `DATA_DIR`. Every operation on one runs in `
 - **Backups.** When a backup bucket is enabled, every few hours (6 by default) Sideyard snapshots `sideyard.db` and every SQLite file in every `DATA_DIR`, gzips them and uploads them to `<folder>/sideyard/sideyard.db/<UTC time>.db.gz` and `<folder>/projects/<name>/<path>/<UTC time>.db.gz`. Copies older than the retention (14 days by default) are deleted, except the newest three of each database. Saving the settings writes and deletes a test object first, so a key that can only read is caught. The Database tab lists a database's copies and restores one through the import path. `master.key` is never uploaded; Platform settings offers it as a download behind the password.
 - **Monitoring.** Sideyard samples the server and every app every 15 seconds and keeps a day of samples in memory (a restart starts afresh); charts ask for a range and get at most 240 points, averaged. Server figures come from `/proc` and `/sys` (`internal/sysinfo`): CPU split into busy, I/O wait and steal (time the hypervisor gave away, the sign of a noisy neighbour), load, memory and swap, disk I/O summed over whole disks, network summed over interfaces backed by a device, and every disk-backed filesystem. The System page shows them with each app's share, Sideyard's own process, and what the machine is (OS, kernel, CPU, the hypervisor's product name). CPU per app comes from samples of its CPU time (systemd's `CPUUsageNSec`), memory from its cgroup. Every 30 seconds Sideyard requests each live app's health path and logs when an app turns unhealthy or recovers; the dashboard shows it. Domains show whether DNS resolves to this server (compared with the dashboard host's addresses, the machine's interfaces and `SIDEYARD_PUBLIC_IP`) and the certificate Caddy holds for them.
 
+## Agents (MCP)
+
+`/mcp` on the dashboard host serves MCP over stateless streamable HTTP, authenticated by access tokens made on the dashboard's MCP page. A token's level (`read`, `manage` or `full`) decides which tools exist for it. Deploys use one-time upload tickets, app output comes back wrapped as untrusted data, and every call is logged. [mcp.md](mcp.md) has the tools and the reasoning.
+
 ## Install and updates
 
 `deploy/install.sh` is the install path: published with each release, it installs the binary as `/opt/sideyard/bin/sideyard` and writes the systemd unit and `/etc/sideyard/sideyard.env`. The binary lives in `/opt` because the unit's `ProtectSystem=true` makes `/usr` read-only to Sideyard, and an update replaces the binary in place.
@@ -118,7 +123,7 @@ Integrity rests on HTTPS to the source (plain http is refused except on loopback
 | `internal/runner` | Runs releases: `Systemd` (units, users, limits, journald) or `Process` (child processes, file log) |
 | `internal/proxy` | Builds the Caddy config from a route table and loads it |
 | `internal/store` | Platform SQLite database; `editor.go` and `sqlitefile.go` work on apps' SQLite files for the dashboard |
-| `internal/api` | JSON API, auth, deploy upload, embedded dashboard |
+| `internal/api` | JSON API, auth, deploy upload, the MCP endpoint and its tools, embedded dashboard |
 | `web/` | React dashboard |
 | `templates/starter` | The app template, with CI workflow and agent guide |
 | `site/` | Static landing page; its agent prompts embed the starter (`scripts/prompts.sh`) |
