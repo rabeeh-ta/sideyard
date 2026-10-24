@@ -166,6 +166,22 @@ export type ExecResult = {
   needsWrite: boolean
 }
 
+/** An agent's access to the MCP endpoint; each level includes the ones before it. */
+export type AccessLevel = 'read' | 'manage' | 'full'
+
+export type AccessToken = { id: number; name: string; access: AccessLevel; createdAt: string; lastUsedAt?: string }
+
+/** A tool call an agent made over MCP. args leaves out variable values. */
+export type McpCall = {
+  tokenId: number
+  token: string
+  tool: string
+  project: string
+  args: string
+  error: string
+  createdAt: string
+}
+
 export type MetricPoint = { t: number; cpu: number; mem: number }
 
 /** The server at one moment; rates are per second. */
@@ -438,6 +454,11 @@ export const api = {
   projectEmail: (name: string) => request<ProjectEmail>('GET', `${p(name)}/email`),
   setSender: (name: string, sender: string) => request<void>('PUT', `${p(name)}/email`, { sender }),
   projectTestEmail: (name: string, to: string) => request<void>('POST', `${p(name)}/email/test`, { to }),
+
+  mcp: () => request<{ tokens: AccessToken[]; calls: McpCall[] }>('GET', '/api/mcp'),
+  createAccessToken: (name: string, access: AccessLevel) =>
+    request<{ token: AccessToken; secret: string }>('POST', '/api/mcp/tokens', { name, access }),
+  revokeAccessToken: (id: number) => request<void>('DELETE', `/api/mcp/tokens/${id}`),
 
   settings: () => request<PlatformSettings>('GET', '/api/settings'),
   saveBackups: (s: BackupSettings) => request<void>('PUT', '/api/settings/backups', s),

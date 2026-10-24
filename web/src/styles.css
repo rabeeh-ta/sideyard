@@ -747,6 +747,10 @@ input[type='checkbox'] {
   grid-template-columns: 1fr auto;
 }
 
+.kv-row.call {
+  grid-template-columns: minmax(0, 1fr) 140px 56px 64px;
+}
+
 .kv-key {
   width: fit-content;
 }
@@ -1788,6 +1792,9 @@ table.coldefs input:not([type='checkbox']) {
   .kv-row.builtin {
     grid-template-columns: 1fr;
     gap: 2px;
+  }
+  .kv-row.call {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 }
 

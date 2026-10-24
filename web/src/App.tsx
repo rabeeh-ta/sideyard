@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type FormEvent } from '
 import {
   Archive,
   ArrowUpCircle,
+  Bot,
   Check,
   ChevronsUpDown,
   Clock,
@@ -26,6 +27,7 @@ import { api, errorMessage, type ServerInfo } from './api'
 import { formatBytes, go, usePoll, useRoute, useTheme } from './lib'
 import { ProjectsPage } from './ProjectsPage'
 import { flushSections, ProjectRoutes } from './ProjectPage'
+import { McpPage } from './McpPage'
 import { PlatformSettings } from './PlatformSettings'
 import { SystemPage } from './SystemPage'
 import { Logo, Menu } from './ui'
@@ -121,7 +123,7 @@ function Shell({ onSignedOut }: { onSignedOut: () => void }) {
   const { data: server } = usePoll(api.server, 5000, 'server')
   const { data: update } = usePoll(api.update, 10 * 60 * 1000, 'update')
   const project = route[0] === 'p' ? route[1] : null
-  const section = project ? route[2] || 'overview' : route[0] === 'settings' || route[0] === 'system' ? route[0] : 'projects'
+  const section = project ? route[2] || 'overview' : ['settings', 'system', 'mcp'].includes(route[0]) ? route[0] : 'projects'
 
   async function signOut() {
     await api.logout().catch(() => {})
@@ -149,7 +151,7 @@ function Shell({ onSignedOut }: { onSignedOut: () => void }) {
             {!project && section !== 'projects' && (
               <>
                 <span className="crumb-sep">/</span>
-                <span className="crumb">{section === 'system' ? 'System' : 'Platform settings'}</span>
+                <span className="crumb">{{ system: 'System', mcp: 'MCP' }[section] ?? 'Platform settings'}</span>
               </>
             )}
           </div>
@@ -206,6 +208,10 @@ function Shell({ onSignedOut }: { onSignedOut: () => void }) {
                   <LayoutGrid size={18} />
                   <span>Projects</span>
                 </a>
+                <a href="#/mcp" className={`side-item ${section === 'mcp' ? 'active' : ''}`}>
+                  <Bot size={18} />
+                  <span>MCP</span>
+                </a>
                 <a href="#/system" className={`side-item ${section === 'system' ? 'active' : ''}`}>
                   <Server size={18} />
                   <span>System</span>
@@ -240,6 +246,8 @@ function Shell({ onSignedOut }: { onSignedOut: () => void }) {
               </div>
             ) : route[0] === 'system' ? (
               <SystemPage />
+            ) : route[0] === 'mcp' ? (
+              <McpPage />
             ) : (
               <ProjectsPage />
             )}

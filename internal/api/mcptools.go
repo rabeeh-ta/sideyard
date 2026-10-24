@@ -34,6 +34,9 @@ func mcpTool[In any](servers []*mcp.Server, level string, t *mcp.Tool,
 	for _, srv := range servers[slices.Index(accessLevels, level):] {
 		mcp.AddTool(srv, t, func(ctx context.Context, req *mcp.CallToolRequest, in In) (*mcp.CallToolResult, any, error) {
 			text, err := h(ctx, req, in)
+			if errors.Is(err, platform.ErrNotFound) {
+				err = errors.New("not found; list_projects, get_project and list_jobs show what exists")
+			}
 			if err != nil {
 				return nil, nil, err
 			}
@@ -280,14 +283,14 @@ func (s *Server) addMCPTools(servers []*mcp.Server) {
 			ticket := s.tickets.issue(proj.ID)
 			return fmt.Sprintf(`Build: the binary embeds web/dist, so build the frontend first.
 
-(cd web && npm ci && npm run build) && CGO_ENABLED=0 GOOS=linux GOARCH=%s go build -trimpath -ldflags="-s -w" -o app .
+(cd web && npm ci && npm run build) && CGO_ENABLED=0 GOOS=%s GOARCH=%s go build -trimpath -ldflags="-s -w" -o app .
 
 Upload it. The ticket works once, within 15 minutes.
 
 curl --fail-with-body -sS -H "Authorization: Bearer %s" -F binary=@app --form-string "commit=$(git rev-parse --short HEAD 2>/dev/null)" --form-string "message=$(git log -1 --format=%%s 2>/dev/null)" %s/api/projects/%s/deploys
 
 The upload returns once the release is live (HTTP 200) or has failed (HTTP 422, and the previous release keeps serving). The response holds the release's deploy log; after a failure, read get_logs too. Every upload needs a new ticket from this tool.`,
-				runtime.GOARCH, ticket, callerOf(req.Extra).origin, proj.Name), nil
+				runtime.GOOS, runtime.GOARCH, ticket, callerOf(req.Extra).origin, proj.Name), nil
 		})
 
 	mcpTool(servers, AccessManage, &mcp.Tool{Name: "restart", Annotations: changes,
