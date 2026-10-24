@@ -21,10 +21,11 @@ type Server struct {
 	web     fs.FS
 	secure  bool // set the Secure flag on cookies
 	limiter *loginLimiter
+	tickets *deployTickets
 }
 
 func New(p *platform.Platform, st *store.Store, web fs.FS) *Server {
-	return &Server{p: p, store: st, web: web, secure: !p.Config().Dev, limiter: newLoginLimiter()}
+	return &Server{p: p, store: st, web: web, secure: !p.Config().Dev, limiter: newLoginLimiter(), tickets: newDeployTickets()}
 }
 
 func (s *Server) Handler() http.Handler {
@@ -33,10 +34,13 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/login", s.login)
 	mux.HandleFunc("POST /api/logout", s.logout)
 	mux.HandleFunc("GET /api/session", s.session)
-	// Authenticates with the project's deploy token or a dashboard session.
+	// Authenticates with the project's deploy token, a ticket from the deploy
+	// MCP tool, or a dashboard session.
 	mux.HandleFunc("POST /api/projects/{name}/deploys", s.deploy)
 	// Called by apps, with their SIDEYARD_TOKEN.
 	mux.HandleFunc("POST /api/projects/{name}/email/send", s.appSendEmail)
+	// Called by agents, with an access token from the MCP page.
+	mux.Handle("/mcp", s.mcpHandler())
 
 	auth := func(pattern string, h http.HandlerFunc) { mux.Handle(pattern, s.requireSession(h)) }
 	auth("GET /api/server", s.server)
@@ -106,6 +110,10 @@ func (s *Server) Handler() http.Handler {
 	auth("POST /api/settings/email/test", s.testEmail)
 	auth("POST /api/settings/password", s.changePassword)
 	auth("POST /api/settings/master-key", s.downloadMasterKey)
+
+	auth("GET /api/mcp", s.mcpOverview)
+	auth("POST /api/mcp/tokens", s.createAccessToken)
+	auth("DELETE /api/mcp/tokens/{id}", s.revokeAccessToken)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "no such endpoint")
 	})

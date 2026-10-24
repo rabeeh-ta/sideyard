@@ -1,5 +1,6 @@
 // Package store is Sideyard's own SQLite database: projects, domains,
-// variables, releases, settings and sessions. Project data never lives here.
+// variables, releases, settings, sessions and access tokens. Project data
+// never lives here.
 package store
 
 import (
@@ -203,6 +204,24 @@ var migrations = []string{
 		created_at INTEGER NOT NULL,
 		updated_at INTEGER NOT NULL,
 		PRIMARY KEY (project_id, id)
+	);`,
+	`CREATE TABLE access_tokens (
+		id INTEGER PRIMARY KEY,
+		name TEXT NOT NULL,
+		token_hash TEXT NOT NULL UNIQUE,
+		access TEXT NOT NULL,
+		created_at INTEGER NOT NULL,
+		last_used_at INTEGER NOT NULL DEFAULT 0
+	);
+	CREATE TABLE mcp_calls (
+		id INTEGER PRIMARY KEY,
+		token_id INTEGER NOT NULL,
+		token_name TEXT NOT NULL,
+		tool TEXT NOT NULL,
+		project TEXT NOT NULL DEFAULT '',
+		args TEXT NOT NULL DEFAULT '',
+		error TEXT NOT NULL DEFAULT '',
+		created_at INTEGER NOT NULL
 	);`,
 }
 

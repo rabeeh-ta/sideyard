@@ -353,10 +353,13 @@ func (s *Server) deploy(w http.ResponseWriter, r *http.Request) {
 	writeRelease(w, rel, err)
 }
 
+// deployAllowed accepts the project's deploy token, a ticket the deploy MCP
+// tool issued for it, or a dashboard session.
 func (s *Server) deployAllowed(r *http.Request, proj store.Project) bool {
 	if token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok {
-		got := secrets.Hash(strings.TrimSpace(token))
-		return subtle.ConstantTimeCompare([]byte(got), []byte(proj.DeployTokenHash)) == 1
+		token = strings.TrimSpace(token)
+		got := secrets.Hash(token)
+		return subtle.ConstantTimeCompare([]byte(got), []byte(proj.DeployTokenHash)) == 1 || s.tickets.redeem(token, proj.ID)
 	}
 	return s.hasSession(r)
 }

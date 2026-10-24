@@ -413,6 +413,125 @@ func (s *Store) DeleteQuery(projectID int64, id string) error {
 	return err
 }
 
+// --- access tokens ---
+
+// AccessToken lets an agent use Sideyard's MCP endpoint. Only its hash is
+// stored; revoking one deletes it.
+type AccessToken struct {
+	ID         int64
+	Name       string
+	Access     string // read, manage or full
+	CreatedAt  time.Time
+	LastUsedAt time.Time // zero until first used
+}
+
+const accessTokenCols = `id, name, access, created_at, last_used_at`
+
+func scanAccessToken(row interface{ Scan(...any) error }) (AccessToken, error) {
+	var t AccessToken
+	var created, used int64
+	err := row.Scan(&t.ID, &t.Name, &t.Access, &created, &used)
+	t.CreatedAt = time.Unix(created, 0).UTC()
+	if used > 0 {
+		t.LastUsedAt = time.Unix(used, 0).UTC()
+	}
+	return t, err
+}
+
+func (s *Store) CreateAccessToken(name, tokenHash, access string) (AccessToken, error) {
+	res, err := s.db.Exec(`INSERT INTO access_tokens (name, token_hash, access, created_at) VALUES (?, ?, ?, ?)`,
+		name, tokenHash, access, time.Now().Unix())
+	if err != nil {
+		return AccessToken{}, err
+	}
+	id, _ := res.LastInsertId()
+	t, err := scanAccessToken(s.db.QueryRow(`SELECT `+accessTokenCols+` FROM access_tokens WHERE id = ?`, id))
+	return t, err
+}
+
+// UseAccessToken finds the token with this hash and records that it was used.
+func (s *Store) UseAccessToken(tokenHash string) (AccessToken, error) {
+	t, err := scanAccessToken(s.db.QueryRow(`UPDATE access_tokens SET last_used_at = ? WHERE token_hash = ?
+		RETURNING `+accessTokenCols, time.Now().Unix(), tokenHash))
+	if errors.Is(err, sql.ErrNoRows) {
+		return t, ErrNotFound
+	}
+	return t, err
+}
+
+func (s *Store) AccessTokens() ([]AccessToken, error) {
+	rows, err := s.db.Query(`SELECT ` + accessTokenCols + ` FROM access_tokens ORDER BY id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []AccessToken
+	for rows.Next() {
+		t, err := scanAccessToken(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, t)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) DeleteAccessToken(id int64) error {
+	res, err := s.db.Exec(`DELETE FROM access_tokens WHERE id = ?`, id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// --- MCP calls ---
+
+// MCPCall is one tool call an agent made. It keeps the token's name, so the
+// record outlives a revoked token.
+type MCPCall struct {
+	ID        int64
+	TokenID   int64
+	TokenName string
+	Tool      string
+	Project   string
+	Args      string // JSON, with secrets left out
+	Error     string // empty when the call succeeded
+	CreatedAt time.Time
+}
+
+// LogMCPCall records a tool call and keeps the newest 1,000.
+func (s *Store) LogMCPCall(c MCPCall) error {
+	if _, err := s.db.Exec(`INSERT INTO mcp_calls (token_id, token_name, tool, project, args, error, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?)`, c.TokenID, c.TokenName, c.Tool, c.Project, c.Args, c.Error, time.Now().Unix()); err != nil {
+		return err
+	}
+	_, err := s.db.Exec(`DELETE FROM mcp_calls WHERE id NOT IN (SELECT id FROM mcp_calls ORDER BY id DESC LIMIT 1000)`)
+	return err
+}
+
+func (s *Store) MCPCalls(limit int) ([]MCPCall, error) {
+	rows, err := s.db.Query(`SELECT id, token_id, token_name, tool, project, args, error, created_at
+		FROM mcp_calls ORDER BY id DESC LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []MCPCall
+	for rows.Next() {
+		var c MCPCall
+		var created int64
+		if err := rows.Scan(&c.ID, &c.TokenID, &c.TokenName, &c.Tool, &c.Project, &c.Args, &c.Error, &created); err != nil {
+			return nil, err
+		}
+		c.CreatedAt = time.Unix(created, 0).UTC()
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
 // Snapshot writes a consistent copy of Sideyard's own database to dst.
 func (s *Store) Snapshot(dst string) error {
 	_, err := s.db.Exec(`VACUUM INTO ?`, dst)

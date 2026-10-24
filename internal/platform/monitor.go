@@ -208,10 +208,10 @@ func (p *Platform) DomainStatus(ctx context.Context, name string) ([]DomainStatu
 	return out, nil
 }
 
-// serverAddresses are the addresses this server is reached at: those in
-// SIDEYARD_PUBLIC_IP, the dashboard host's (it reaches this server by
-// definition), and the machine's own interfaces.
-func (p *Platform) serverAddresses(ctx context.Context) []string {
+// PublicAddresses are where a domain's DNS records should point: those in
+// SIDEYARD_PUBLIC_IP and the dashboard host's (it reaches this server by
+// definition).
+func (p *Platform) PublicAddresses(ctx context.Context) []string {
 	var out []string
 	for _, ip := range strings.Split(os.Getenv("SIDEYARD_PUBLIC_IP"), ",") {
 		if ip = strings.TrimSpace(ip); ip != "" {
@@ -223,6 +223,13 @@ func (p *Platform) serverAddresses(ctx context.Context) []string {
 			out = append(out, addrs...)
 		}
 	}
+	return out
+}
+
+// serverAddresses are the addresses this server is reached at: its public
+// addresses and the machine's own interfaces.
+func (p *Platform) serverAddresses(ctx context.Context) []string {
+	out := p.PublicAddresses(ctx)
 	if ifaces, err := net.InterfaceAddrs(); err == nil {
 		for _, a := range ifaces {
 			if ipn, ok := a.(*net.IPNet); ok && !ipn.IP.IsLoopback() {

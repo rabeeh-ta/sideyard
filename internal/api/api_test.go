@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -60,35 +61,7 @@ func (c *client) do(method, path string, body any, wantStatus int) []byte {
 // TestAPI drives the HTTP API end to end: sign in, deploy over multipart,
 // the email API apps call, jobs, and that settings never echo secrets.
 func TestAPI(t *testing.T) {
-	ctx := context.Background()
-	dataDir := t.TempDir()
-	cfg := config.Config{DataDir: dataDir, Domain: "localhost", DashboardHost: "sideyard.localhost",
-		Dev: true, PublicAddr: freeAddr(t), APIAddr: freeAddr(t)}
-	st, err := store.Open(filepath.Join(dataDir, "sideyard.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	box, _ := secrets.LoadOrCreate(filepath.Join(dataDir, "master.key"))
-	password, err := api.EnsurePassword(st)
-	if err != nil {
-		t.Fatal(err)
-	}
-	px := proxy.New(cfg)
-	p := platform.New(cfg, st, box, px, runner.NewProcess())
-	if err := p.Boot(ctx); err != nil {
-		t.Fatal(err)
-	}
-	srv := httptest.NewServer(api.New(p, st, os.DirFS(t.TempDir())).Handler())
-	t.Cleanup(func() {
-		srv.Close()
-		p.Shutdown()
-		px.Stop()
-		st.Close()
-	})
-	jar, _ := cookiejar.New(nil)
-	c := &client{t: t, base: srv.URL, http: &http.Client{Jar: jar, CheckRedirect: func(*http.Request, []*http.Request) error {
-		return http.ErrUseLastResponse
-	}}}
+	cfg, srv, c, password := startServer(t)
 
 	c.do("GET", "/api/projects", nil, 401)
 	c.do("POST", "/api/login", map[string]string{"password": "wrong"}, 401)
@@ -137,28 +110,8 @@ func TestAPI(t *testing.T) {
 	}
 
 	// Deploy over HTTP, as CI does.
-	bin := filepath.Join(t.TempDir(), "app")
-	if out, err := exec.Command("go", "build", "-o", bin, "../platform/testdata/app").CombinedOutput(); err != nil {
-		t.Fatalf("build test app: %v\n%s", err, out)
-	}
-	deploy := func(token string) int {
-		var body bytes.Buffer
-		mw := multipart.NewWriter(&body)
-		fw, _ := mw.CreateFormFile("binary", "app")
-		b, _ := os.ReadFile(bin)
-		fw.Write(b)
-		mw.WriteField("commit", "abc123")
-		mw.Close()
-		req, _ := http.NewRequest("POST", srv.URL+"/api/projects/demo/deploys", &body)
-		req.Header.Set("Content-Type", mw.FormDataContentType())
-		req.Header.Set("Authorization", "Bearer "+token)
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			t.Fatal(err)
-		}
-		resp.Body.Close()
-		return resp.StatusCode
-	}
+	bin := buildTestApp(t)
+	deploy := func(token string) int { return upload(t, srv.URL, "demo", token, bin) }
 	if code := deploy("sy_wrong"); code != 401 {
 		t.Fatalf("deploy with a wrong token: %d", code)
 	}
@@ -234,6 +187,75 @@ func TestAPI(t *testing.T) {
 	c.do("GET", "/api/projects", nil, 200)
 	c.do("POST", "/api/login", map[string]string{"password": password}, 401)
 }
+
+// startServer boots Sideyard with the process runner and serves its API,
+// with a client that keeps cookies. It returns the admin password.
+func startServer(t *testing.T) (config.Config, *httptest.Server, *client, string) {
+	t.Helper()
+	ctx := context.Background()
+	dataDir := t.TempDir()
+	cfg := config.Config{DataDir: dataDir, Domain: "localhost", DashboardHost: "sideyard.localhost",
+		Dev: true, PublicAddr: freeAddr(t), APIAddr: freeAddr(t)}
+	st, err := store.Open(filepath.Join(dataDir, "sideyard.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	box, _ := secrets.LoadOrCreate(filepath.Join(dataDir, "master.key"))
+	password, err := api.EnsurePassword(st)
+	if err != nil {
+		t.Fatal(err)
+	}
+	px := proxy.New(cfg)
+	p := platform.New(cfg, st, box, px, runner.NewProcess())
+	if err := p.Boot(ctx); err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(api.New(p, st, os.DirFS(t.TempDir())).Handler())
+	t.Cleanup(func() {
+		srv.Close()
+		p.Shutdown()
+		px.Stop()
+		st.Close()
+	})
+	jar, _ := cookiejar.New(nil)
+	c := &client{t: t, base: srv.URL, http: &http.Client{Jar: jar, CheckRedirect: func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}}}
+	return cfg, srv, c, password
+}
+
+// buildTestApp compiles the app the platform tests deploy.
+func buildTestApp(t *testing.T) string {
+	t.Helper()
+	bin := filepath.Join(t.TempDir(), "app")
+	if out, err := exec.Command("go", "build", "-o", bin, "../platform/testdata/app").CombinedOutput(); err != nil {
+		t.Fatalf("build test app: %v\n%s", err, out)
+	}
+	return bin
+}
+
+// upload deploys bin to a project as CI does, returning the HTTP status.
+func upload(t *testing.T, base, project, token, bin string) int {
+	t.Helper()
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+	fw, _ := mw.CreateFormFile("binary", "app")
+	b, _ := os.ReadFile(bin)
+	fw.Write(b)
+	mw.WriteField("commit", "abc123")
+	mw.Close()
+	req, _ := http.NewRequest("POST", base+"/api/projects/"+project+"/deploys", &body)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	return resp.StatusCode
+}
+
+func itoa(n int64) string { return strconv.FormatInt(n, 10) }
 
 // appGet requests a path on the demo app through the proxy.
 func appGet(t *testing.T, cfg config.Config, path string) string {
