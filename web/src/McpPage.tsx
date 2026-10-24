@@ -134,9 +134,7 @@ function ConnectSteps({ endpoint, token }: { endpoint: string; token: string }) 
       <CodeBlock>{`claude mcp add --scope user --transport http sideyard ${endpoint} \\
   --header "Authorization: Bearer ${token}"`}</CodeBlock>
       <h4>Other agents</h4>
-      <p className="muted">
-        Agents that take a JSON configuration, such as Cursor, connect to the same URL with the token as a header.
-      </p>
+      <p className="muted">Other agents connect to the same URL with the token as a header. Most take JSON like this.</p>
       <CodeBlock>{JSON.stringify(
         { mcpServers: { sideyard: { type: 'http', url: endpoint, headers: { Authorization: `Bearer ${token}` } } } },
         null,
