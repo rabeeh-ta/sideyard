@@ -1,6 +1,6 @@
 # Agents over MCP
 
-Sideyard serves an MCP endpoint, so an agent such as Claude Code can create projects, deploy, read logs and iterate without the dashboard. Set it up once: make an access token on the dashboard's **MCP** page and add it to the agent.
+Sideyard serves an MCP endpoint, so an agent such as Claude Code, Codex or Cursor can create projects, deploy, read logs and iterate without the dashboard. Set it up once: make an access token on the dashboard's **MCP** page and add it to the agent. The page has the setup for Claude Code, Codex, Cursor, VS Code and Gemini CLI, and JSON for the rest. For Claude Code it's:
 
 ```
 claude mcp add --scope user --transport http sideyard https://sideyard.example.com/mcp \

@@ -44,7 +44,7 @@ export function McpPage() {
     <div className="page narrow">
       <PageHead
         title="MCP"
-        description="Connect an AI agent such as Claude Code, so it can create, deploy and debug apps on this server."
+        description="Connect an AI agent such as Claude Code, Codex or Cursor, so it can create, deploy and debug apps on this server."
       >
         <button className="primary" onClick={() => setCreating(true)}>
           <Plus size={14} /> New token
@@ -126,20 +126,83 @@ export function McpPage() {
   )
 }
 
+const json = (v: unknown) => JSON.stringify(v, null, 2)
+
+/** How each agent adds Sideyard, given the endpoint and a token. */
+const agents: { id: string; label: string; how: string; config: (url: string, token: string) => string }[] = [
+  {
+    id: 'claude-code',
+    label: 'Claude Code',
+    how: 'Run this once on the machine; Claude Code can then use Sideyard in every project there.',
+    config: (url, token) => `claude mcp add --scope user --transport http sideyard ${url} \\
+  --header "Authorization: Bearer ${token}"`,
+  },
+  {
+    id: 'codex',
+    label: 'Codex',
+    how: 'Add this to ~/.codex/config.toml.',
+    config: (url, token) => `[mcp_servers.sideyard]
+url = "${url}"
+http_headers = { Authorization = "Bearer ${token}" }`,
+  },
+  {
+    id: 'cursor',
+    label: 'Cursor',
+    how: 'Put this in ~/.cursor/mcp.json, or add the sideyard entry to the servers already there.',
+    config: (url, token) => json({ mcpServers: { sideyard: { url, headers: { Authorization: `Bearer ${token}` } } } }),
+  },
+  {
+    id: 'vscode',
+    label: 'VS Code',
+    how: 'Run this once; it adds Sideyard to your VS Code profile for agent mode.',
+    config: (url, token) =>
+      `code --add-mcp '${JSON.stringify({ name: 'sideyard', type: 'http', url, headers: { Authorization: `Bearer ${token}` } })}'`,
+  },
+  {
+    id: 'gemini',
+    label: 'Gemini CLI',
+    how: 'Run this once on the machine; Gemini CLI can then use Sideyard in every project there.',
+    config: (url, token) => `gemini mcp add --scope user --transport http sideyard ${url} \\
+  --header "Authorization: Bearer ${token}"`,
+  },
+  {
+    id: 'other',
+    label: 'Other',
+    how: 'Other agents connect to the same URL with the token as a header. Most take JSON like this.',
+    config: (url, token) =>
+      json({ mcpServers: { sideyard: { type: 'http', url, headers: { Authorization: `Bearer ${token}` } } } }),
+  },
+]
+
+const agentKey = 'sideyard:mcp-agent'
+
 function ConnectSteps({ endpoint, token }: { endpoint: string; token: string }) {
+  const [chosen, setChosen] = useState(() => localStorage.getItem(agentKey))
+  const agent = agents.find((a) => a.id === chosen) ?? agents[0]
+
+  function choose(id: string) {
+    localStorage.setItem(agentKey, id)
+    setChosen(id)
+  }
+
   return (
     <>
-      <h4>Claude Code</h4>
-      <p className="muted">Run this once on the machine; the agent can then use Sideyard in every project there.</p>
-      <CodeBlock>{`claude mcp add --scope user --transport http sideyard ${endpoint} \\
-  --header "Authorization: Bearer ${token}"`}</CodeBlock>
-      <h4>Other agents</h4>
-      <p className="muted">Other agents connect to the same URL with the token as a header. Most take JSON like this.</p>
-      <CodeBlock>{JSON.stringify(
-        { mcpServers: { sideyard: { type: 'http', url: endpoint, headers: { Authorization: `Bearer ${token}` } } } },
-        null,
-        2,
-      )}</CodeBlock>
+      <div className="chips" role="radiogroup" aria-label="Agent">
+        {agents.map((a) => (
+          <button
+            type="button"
+            key={a.id}
+            role="radio"
+            aria-checked={agent === a}
+            className={`chip ${agent === a ? 'on' : ''}`}
+            onClick={() => choose(a.id)}
+          >
+            {a.label}
+          </button>
+        ))}
+      </div>
+      <p className="muted">{agent.how}</p>
+      <CodeBlock>{agent.config(endpoint, token)}</CodeBlock>
     </>
   )
 }
