@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sideyard docs</title>
+    <meta
+      name="description"
+      content="How to install Sideyard, deploy an app to it, and use its database, storage, jobs, email, backups and MCP endpoint. Short and to the point."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='6' height='6' rx='1.5' fill='%2322c17a'/%3E%3Crect x='9' y='1' width='6' height='6' rx='1.5' fill='%23ff4f4f'/%3E%3Crect x='1' y='9' width='6' height='6' rx='1.5' fill='%232f7bff'/%3E%3Crect x='9' y='9' width='6' height='6' rx='1.5' fill='%23ffc21a'/%3E%3C/svg%3E"
+    />
+    <script>
+      try {
+        const t = localStorage.getItem('sideyard-theme')
+        if (['light', 'dark', 'grape', 'sky'].includes(t)) document.documentElement.dataset.theme = t
+      } catch {}
+    </script>
+    <link rel="stylesheet" href="../base.css" />
+    <style>
+      body {
+        font-size: 16px;
+      }
+      nav a[aria-current] {
+        color: var(--ink);
+      }
+      .docs {
+        display: grid;
+        grid-template-columns: 210px minmax(0, 1fr);
+        gap: 56px;
+        padding-top: 32px;
+      }
+
+      /* Contents: sticky beside the page, two columns above it on phones */
+      .toc {
+        display: block;
+        position: sticky;
+        top: 84px;
+        align-self: start;
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+        font-size: 15px;
+      }
+      .toc div {
+        margin-bottom: 20px;
+      }
+      .toc h2 {
+        font: 700 12px var(--mono);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--ink-3);
+        margin: 0 0 6px 10px;
+      }
+      .toc a {
+        display: block;
+        padding: 4px 10px;
+        border-radius: 8px;
+        color: var(--ink-2);
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .toc a:hover {
+        color: var(--ink);
+      }
+      .toc a.on {
+        color: var(--ink);
+        background: var(--card);
+        box-shadow: inset 0 0 0 1.5px var(--line);
+      }
+      @media (max-width: 860px) {
+        .docs {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 8px;
+        }
+        .toc {
+          position: static;
+          max-height: none;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          align-items: start;
+          column-gap: 16px;
+        }
+        .toc div:nth-child(2) {
+          grid-column: 2;
+          grid-row: 1 / span 2;
+        }
+      }
+
+      /* The page */
+      article {
+        max-width: 760px;
+        min-width: 0;
+      }
+      article h1 {
+        font-size: clamp(34px, 5vw, 46px);
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+        margin: 0 0 12px;
+      }
+      .lede {
+        font-size: 18px;
+        color: var(--ink-2);
+        margin: 0;
+      }
+      article section {
+        margin-top: 44px;
+        padding-top: 4px;
+        border-top: 1.5px solid var(--line);
+      }
+      article h2 {
+        font-size: 26px;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+        margin: 28px 0 12px;
+      }
+      article h3 {
+        font-size: 17px;
+        margin: 26px 0 6px;
+      }
+      article p,
+      article ul,
+      article ol {
+        margin: 0 0 14px;
+      }
+      article li {
+        margin-bottom: 4px;
+      }
+      article a {
+        text-decoration-color: color-mix(in srgb, var(--ink) 35%, transparent);
+        text-underline-offset: 2px;
+      }
+      .note {
+        color: var(--ink-2);
+        font-size: 15px;
+      }
+      .code {
+        position: relative;
+        margin: 0 0 16px;
+      }
+      .code pre {
+        margin: 0;
+        padding: 14px 16px;
+        padding-right: 76px;
+        background: var(--card);
+        box-shadow: inset 0 0 0 1.5px var(--line);
+        border-radius: 12px;
+        overflow-x: auto;
+        font: 13.5px/1.6 var(--mono);
+      }
+      .code pre code {
+        background: none;
+        padding: 0;
+        font-size: inherit;
+      }
+      .code .btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        height: 28px;
+        padding: 0 10px;
+        font-size: 12px;
+        border-radius: 8px;
+      }
+      .table {
+        overflow-x: auto;
+        margin: 0 0 16px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+      }
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        padding: 8px 12px 8px 0;
+        border-bottom: 1.5px solid var(--line);
+      }
+      th {
+        font-weight: 700;
+      }
+      footer {
+        margin-top: 96px;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-logo" viewBox="0 0 16 16">
+        <rect x="1" y="1" width="6" height="6" rx="1.6" fill="var(--green)" />
+        <rect x="9" y="1" width="6" height="6" rx="1.6" fill="var(--red)" />
+        <rect x="1" y="9" width="6" height="6" rx="1.6" fill="var(--blue)" />
+        <rect x="9" y="9" width="6" height="6" rx="1.6" fill="var(--yellow)" />
+      </symbol>
+      <symbol id="i-github" viewBox="0 0 24 24">
+        <path
+          fill="currentColor"
+          d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.1c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.7.3 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"
+        />
+      </symbol>
+    </svg>
+
+    <header>
+      <div class="wrap">
+        <div class="brand">
+          <a class="logo" href="../" aria-label="Sideyard home"><svg width="26" height="26"><use href="#i-logo" /></svg>sideyard</a>
+        </div>
+        <nav aria-label="Main">
+          <a class="wide" href="../#prompts">Prompts</a>
+          <a href="./" aria-current="page">Docs</a>
+          <a class="btn primary small" href="https://github.com/rabeeh-ta/sideyard"><svg width="17" height="17"><use href="#i-github" /></svg>GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="wrap docs">
+      <nav class="toc" aria-label="Contents">
+        <div>
+          <h2>Start</h2>
+          <a href="#intro">Introduction</a>
+          <a href="#install">Install</a>
+          <a href="#first-app">Your first app</a>
+          <a href="#agents">Connect an agent</a>
+        </div>
+        <div>
+          <h2>Apps</h2>
+          <a href="#contract">The app contract</a>
+          <a href="#deploys">Deploys</a>
+          <a href="#variables">Variables</a>
+          <a href="#domains">Domains</a>
+          <a href="#database">Database</a>
+          <a href="#storage">Files and storage</a>
+          <a href="#jobs">Jobs</a>
+          <a href="#email">Email</a>
+          <a href="#logs">Logs and metrics</a>
+        </div>
+        <div>
+          <h2>Server</h2>
+          <a href="#backups">Backups</a>
+          <a href="#updates">Updates</a>
+          <a href="#server">On the server</a>
+          <a href="#limits">Limits</a>
+        </div>
+      </nav>
+
+      <article>
+        <h1>Docs</h1>
+        <p class="lede">Everything you need to run apps on Sideyard, kept short. Your coding agent reads the details from the app's <code>AGENTS.md</code>; this page is for you.</p>
+
+        <section id="intro">
+          <h2>Introduction</h2>
+          <p>
+            Sideyard runs many small web apps on one server you own. It's a single Go binary with Caddy built in: it
+            serves every app over HTTPS, deploys them without downtime, and gives each one a database editor, backups,
+            scheduled jobs, email, file storage and logs.
+          </p>
+          <p>
+            Every app has the same shape: a Go backend with its React frontend embedded, and SQLite for data, compiled
+            into one Linux binary. The fixed stack is the point. One small server holds many apps, the dashboard
+            understands each app's database and jobs, and your agent has one well-defined target to build for.
+          </p>
+          <ul>
+            <li>You or your agent build the binary on a laptop or in CI. Node and Go never touch the server.</li>
+            <li>Sideyard starts the new release next to the running one, waits for its health check, then switches traffic. A release that fails never takes traffic.</li>
+            <li>Each app runs as its own Linux user in its own systemd unit, with a memory limit and write access only to its data folder.</li>
+          </ul>
+        </section>
+
+        <section id="install">
+          <h2>Install</h2>
+          <p>
+            You need a fresh Ubuntu or Debian server (amd64 or arm64) with ports 80 and 443 reachable. A 4 GB, 1 vCPU
+            VM is plenty for a handful of small apps.
+          </p>
+          <h3>1. Point a domain at it</h3>
+          <p>Add a wildcard A record (and AAAA if the server has IPv6). On Cloudflare, set it to <em>DNS only</em>: Sideyard gets its own certificates.</p>
+          <div class="code"><pre><code>*.example.com   A   203.0.113.10</code></pre></div>
+          <p class="note">No domain yet? Skip this. The installer offers a free <code>203-0-113-10.sslip.io</code> name for trying it out.</p>
+          <h3>2. Run the installer</h3>
+          <div class="code"><pre><code>curl -fsSL https://github.com/rabeeh-ta/sideyard/releases/latest/download/install.sh \
+  | sudo bash</code></pre></div>
+          <p>
+            It asks for the domain and an admin password, starts Sideyard as a systemd service and prints the
+            dashboard's address, <code>https://sideyard.example.com</code>. Apps get <code>&lt;name&gt;.example.com</code>.
+          </p>
+          <p>Without questions, for scripts and cloud-init:</p>
+          <div class="code"><pre><code>curl -fsSL https://github.com/rabeeh-ta/sideyard/releases/latest/download/install.sh \
+  | sudo SIDEYARD_DOMAIN=example.com bash -s -- --yes</code></pre></div>
+          <p class="note">More in the <a href="https://github.com/rabeeh-ta/sideyard/blob/master/docs/install.md">install guide</a>.</p>
+        </section>
+
+        <section id="first-app">
+          <h2>Your first app</h2>
+          <p>
+            The quickest start is the <a href="../#prompts">New app prompt</a>: paste it into your coding agent with a
+            description of what you want. The agent creates the starter (Go server, migrations, jobs, email, React
+            frontend and deploy workflow), saves the contract as <code>AGENTS.md</code> and builds your app inside it.
+            Moving an app you already have? Use the <em>Existing app</em> prompt next to it.
+          </p>
+          <p>Without an agent, copy the starter yourself:</p>
+          <div class="code"><pre><code>git clone https://github.com/rabeeh-ta/sideyard
+cp -r sideyard/templates/starter my-app &amp;&amp; cd my-app
+cd web &amp;&amp; npm install &amp;&amp; cd ..
+make api       # Go server on :3000, data in ./data
+make web-dev   # Vite on :5173, forwards /api to :3000</code></pre></div>
+          <p>
+            To put it online, create a project in the dashboard and follow the <em>Connect deploys</em> steps it shows,
+            or connect your agent and let it deploy.
+          </p>
+        </section>
+
+        <section id="agents">
+          <h2>Connect an agent</h2>
+          <p>
+            Sideyard serves MCP at <code>https://sideyard.example.com/mcp</code>, so an agent can create projects,
+            deploy, read logs and fix what broke without you opening the dashboard. On the dashboard's
+            <strong>MCP</strong> page, make a token, pick your agent (Claude Code, Codex, Cursor, VS Code, Gemini CLI
+            or another) and copy its setup. For Claude Code it's:
+          </p>
+          <div class="code"><pre><code>claude mcp add --scope user --transport http sideyard \
+  https://sideyard.example.com/mcp \
+  --header "Authorization: Bearer sy_mcp_…"</code></pre></div>
+          <p>Then ask it to deploy the app to Sideyard. It builds the binary, uploads it with a one-time ticket, and reads the logs if the health check fails.</p>
+          <div class="table">
+            <table>
+              <tr><th>Token level</th><th>What the agent can do</th></tr>
+              <tr><td>Read only</td><td>See projects, status, logs, variable names and jobs; run read-only SQL.</td></tr>
+              <tr><td>Manage <span class="note">(default)</span></td><td>Also create projects, deploy, restart, stop, roll back, and change variables, settings, domains and jobs.</td></tr>
+              <tr><td>Full</td><td>Also delete projects with their data.</td></tr>
+            </table>
+          </div>
+          <p>
+            No level can read a variable's value, change platform settings or touch the admin password. Every call is
+            logged on the MCP page, and revoking a token stops it at once. Clients that connect only with OAuth, such
+            as claude.ai's connectors, can't connect yet.
+          </p>
+        </section>
+
+        <section id="contract">
+          <h2>The app contract</h2>
+          <p>Any app that keeps to these rules runs on Sideyard. The starter already does, and its <code>AGENTS.md</code> is the full version.</p>
+          <ul>
+            <li>Listen on <code>127.0.0.1:$PORT</code>. Sideyard's proxy owns the domain and HTTPS.</li>
+            <li>Keep persistent files in <code>$DATA_DIR</code>. Everything else is replaced on each deploy, and read-only on the server apart from a private <code>/tmp</code>.</li>
+            <li>Answer the health check (<code>GET /healthz</code> by default) with a 2xx or 3xx once the app can serve.</li>
+            <li>On SIGTERM, finish in-flight requests and exit within 10 seconds.</li>
+            <li>Build with <code>CGO_ENABLED=0 GOOS=linux</code>, so use the pure-Go SQLite driver, <code>modernc.org/sqlite</code>.</li>
+          </ul>
+          <div class="table">
+            <table>
+              <tr><th>Variable</th><th>Value</th></tr>
+              <tr><td><code>PORT</code></td><td>The port to listen on, on 127.0.0.1</td></tr>
+              <tr><td><code>DATA_DIR</code></td><td>Persistent folder that survives deploys; also the working directory</td></tr>
+              <tr><td><code>DATABASE_PATH</code></td><td><code>$DATA_DIR/app.db</code></td></tr>
+              <tr><td><code>SIDEYARD_PROJECT</code>, <code>SIDEYARD_RELEASE</code></td><td>Project name and release number</td></tr>
+              <tr><td><code>SIDEYARD_TOKEN</code>, <code>SIDEYARD_API_URL</code></td><td>Authenticate <a href="#jobs">job calls</a> and the <a href="#email">email API</a></td></tr>
+              <tr><td><code>AWS_*</code>, <code>S3_BUCKET</code></td><td>Only while a <a href="#storage">bucket</a> is connected</td></tr>
+            </table>
+          </div>
+          <p>
+            Memory is capped at 512 MB and CPU is unlimited by default; change both in
+            <strong>Settings → Runtime</strong>.
+          </p>
+          <p>
+            Not a Go app? Any Linux binary that keeps to the contract runs. <strong>Start arguments</strong> in the same
+            place passes flags with <code>$VARS</code> expanded. PocketBase, for example, runs with
+            <code>serve --http=127.0.0.1:$PORT --dir=$DATA_DIR/pb_data</code> and the health check path
+            <code>/api/health</code>.
+          </p>
+        </section>
+
+        <section id="deploys">
+          <h2>Deploys</h2>
+          <p>A deploy is one binary upload, authenticated with the project's deploy token:</p>
+          <div class="code"><pre><code>make build    # builds web/dist, then a Linux binary with it embedded: ./app
+              # (make build GOARCH=arm64 for an ARM server)
+curl --fail-with-body -H "Authorization: Bearer $SIDEYARD_TOKEN" -F binary=@app \
+  https://sideyard.example.com/api/projects/my-app/deploys</code></pre></div>
+          <p>
+            Sideyard starts the new release on a free port and waits up to 60 seconds for its health check. If it
+            passes, traffic moves to it and the old process stops. If not, the new one stops, the old one keeps
+            serving, and the upload fails with 422 and the release log.
+          </p>
+          <h3>From GitHub</h3>
+          <p>
+            The starter's <code>.github/workflows/deploy.yml</code> deploys every push to <code>main</code>. Set the
+            secret <code>SIDEYARD_TOKEN</code> and the variables <code>SIDEYARD_URL</code> and
+            <code>SIDEYARD_PROJECT</code> (and <code>SIDEYARD_ARCH=arm64</code> on an ARM server). From a laptop, put
+            the same values in <code>.env.deploy</code> and run <code>make deploy</code>.
+          </p>
+          <h3>Rollbacks and restarts</h3>
+          <p>
+            The <strong>Deployments</strong> tab keeps the last five releases, and <em>Roll back</em> starts an older
+            one the same health-checked way. Restarts and variable changes go through that path too, so none of them
+            cause downtime.
+          </p>
+          <p>
+            Migrations don't roll back. Append new ones and keep each compatible with the previous release's code: add
+            tables and columns now, drop or rename them in a later deploy.
+          </p>
+          <p class="note">The deploy token is shown once, when the project is created. <strong>Settings → Deploy token</strong> makes a new one.</p>
+        </section>
+
+        <section id="variables">
+          <h2>Variables</h2>
+          <p>
+            In the <strong>Variables</strong> tab, paste <code>KEY=value</code> lines as in a <code>.env</code> file.
+            Values are encrypted at rest, and saving restarts the app without downtime. The app gets these plus the
+            ones in <a href="#contract">the contract</a>, nothing else: Sideyard's own environment is never passed on.
+          </p>
+        </section>
+
+        <section id="domains">
+          <h2>Domains</h2>
+          <p>
+            Every project gets <code>&lt;name&gt;.example.com</code> from the wildcard record. To add your own domain,
+            point an A record (AAAA for IPv6) at the server, or a CNAME at <code>sideyard.example.com</code> for a
+            subdomain, then add it in <strong>Settings → Domains</strong>. HTTPS is set up automatically. Behind
+            Cloudflare, keep the record <em>DNS only</em>.
+          </p>
+          <p>The list shows whether each domain points at this server and which certificate Sideyard holds for it.</p>
+        </section>
+
+        <section id="database">
+          <h2>Database</h2>
+          <p>The app's database is <code>$DATABASE_PATH</code>. The <strong>Database</strong> tab finds every SQLite file in <code>$DATA_DIR</code>.</p>
+          <ul>
+            <li><strong>Table Editor</strong>: browse, filter and edit rows; create, rename and drop tables and columns.</li>
+            <li><strong>SQL Editor</strong>: runs read-only until you confirm a write. Saved queries are shared between browsers.</li>
+            <li><strong>Download</strong>: a consistent snapshot, even while the app is writing.</li>
+            <li><strong>Import</strong>: checks the file, swaps it in and restarts the app. If the app then fails its health check, the old file goes back. Replaced files stay in <code>$DATA_DIR/.sideyard/backups</code> (the last 10).</li>
+          </ul>
+          <p>
+            To bring data from an existing app, create the project, upload its file with <strong>Database → Add a
+            database</strong> at the path the app expects, then deploy. Copy it with
+            <code>sqlite3 app.db ".backup copy.db"</code> so the copy is consistent while the old app runs.
+          </p>
+        </section>
+
+        <section id="storage">
+          <h2>Files and storage</h2>
+          <p>
+            Keep uploads and large files in an S3 bucket, with their metadata in SQLite. In the
+            <strong>Storage</strong> tab, connect a bucket on AWS S3, Cloudflare R2, Backblaze B2, DigitalOcean Spaces
+            or any S3-compatible service. Sideyard checks the key, sets <code>AWS_ENDPOINT_URL_S3</code>,
+            <code>AWS_REGION</code>, <code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code> and
+            <code>S3_BUCKET</code>, and restarts the app. The tab also lets you browse the bucket's files.
+          </p>
+          <ul>
+            <li>The AWS SDK for Go v2 reads the <code>AWS_</code> variables by itself.</li>
+            <li>Off AWS, set <code>UsePathStyle</code>, and <code>RequestChecksumCalculation</code> and <code>ResponseChecksumValidation</code> to <code>WhenRequired</code>.</li>
+            <li>Keep the bucket private and serve files through the app or with presigned URLs. Give each project a key scoped to its own bucket.</li>
+          </ul>
+        </section>
+
+        <section id="jobs">
+          <h2>Jobs</h2>
+          <p>A scheduled job is an HTTP call from Sideyard into the app, so the app needs no timers and never runs a job twice at once.</p>
+          <ol>
+            <li>Handle <code>POST /_jobs/&lt;name&gt;</code> in the app, and check <code>Authorization: Bearer $SIDEYARD_TOKEN</code>. Answer 2xx with text for the run's output, or an error status to fail it. In the starter, add a function to the <code>jobs</code> map in <code>jobs.go</code>.</li>
+            <li>Deploy, then create the job in the <strong>Jobs</strong> tab with a cron schedule: five fields, in UTC unless prefixed with <code>CRON_TZ=Area/City</code>. <code>@daily</code> and <code>@every 15m</code> work too.</li>
+          </ol>
+          <p>
+            Runs missed while the app was down collapse into one catch-up run, and a run is skipped while the previous
+            one is still going. Each job has a timeout and optional retries, and the last 100 runs are kept with their
+            output. <code>/_jobs/*</code> answers 404 on every public domain, so only Sideyard can trigger it. Keep jobs
+            idempotent.
+          </p>
+        </section>
+
+        <section id="email">
+          <h2>Email</h2>
+          <p>
+            In <strong>Platform settings → Email</strong>, set one SMTP server (any provider), a default sender and
+            the sender domains you've verified with the provider. Each project picks its sender in its
+            <strong>Email</strong> tab, and the app sends with its own token:
+          </p>
+          <div class="code"><pre><code>curl -X POST "$SIDEYARD_API_URL/api/projects/$SIDEYARD_PROJECT/email/send" \
+  -H "Authorization: Bearer $SIDEYARD_TOKEN" -H "Content-Type: application/json" \
+  -d '{"to": ["ada@example.com"], "subject": "Hello", "text": "Plain text", "html": "&lt;p&gt;Optional&lt;/p&gt;"}'</code></pre></div>
+          <p>
+            Up to 50 recipients per email and 60 emails a minute per project. The Email tab logs the last 500. The
+            starter's <code>sendEmail</code> in <code>email.go</code> does this for you.
+          </p>
+        </section>
+
+        <section id="logs">
+          <h2>Logs and metrics</h2>
+          <ul>
+            <li><strong>Logs</strong> tab: the app's output and Sideyard's events (deploys, restarts, health changes). Search covers the whole log, not just what's on screen.</li>
+            <li><strong>Project page</strong>: memory, CPU and health.</li>
+            <li><strong>System</strong> page: the server's CPU, memory, disk and network over the last day, with each app's share.</li>
+          </ul>
+          <p>Sideyard checks every app's health every 30 seconds and logs when one turns unhealthy or recovers.</p>
+        </section>
+
+        <section id="backups">
+          <h2>Backups</h2>
+          <p>
+            In <strong>Platform settings → Backups</strong>, connect a bucket used only for backups. Every 6 hours by
+            default, Sideyard snapshots its own database and every app's SQLite files and uploads them gzipped. Copies
+            older than 14 days are deleted, except the newest three of each. Restore one from
+            <strong>Database → Backups in S3</strong>.
+          </p>
+          <ul>
+            <li>The master key, which decrypts variables, isn't uploaded. Download it from <strong>Platform settings → Security</strong> and keep it off the server.</li>
+            <li>Only SQLite files are backed up. Keep other files in a <a href="#storage">bucket</a>.</li>
+            <li>If the server dies, you lose up to one interval of writes.</li>
+          </ul>
+          <p class="note">To rebuild a dead server, see <a href="https://github.com/rabeeh-ta/sideyard/blob/master/docs/install.md#what-to-back-up">what to back up</a>.</p>
+        </section>
+
+        <section id="updates">
+          <h2>Updates</h2>
+          <p>
+            Sideyard checks for a new release every 6 hours. <strong>Platform settings → Updates</strong> installs it
+            with one click, or automatically. Apps keep serving throughout; the dashboard pauses for a second or two.
+            If a new version fails to start three times in a row, Sideyard puts the previous one back by itself.
+          </p>
+        </section>
+
+        <section id="server">
+          <h2>On the server</h2>
+          <div class="code"><pre><code>sudo sideyard status            # what's running, and where its files are
+sideyard help                   # the other commands
+sudo sideyard reset-password    # new admin password, signs out every browser
+journalctl -u sideyard -f       # Sideyard's own log
+systemctl list-units 'sy-*'     # one unit per running release</code></pre></div>
+          <div class="table">
+            <table>
+              <tr><th>Path</th><th>Contents</th></tr>
+              <tr><td><code>/opt/sideyard/bin/sideyard</code></td><td>The binary</td></tr>
+              <tr><td><code>/etc/sideyard/sideyard.env</code></td><td>Settings; restart Sideyard after changing them</td></tr>
+              <tr><td><code>/var/lib/sideyard/sideyard.db</code></td><td>Projects, domains, releases and encrypted variables</td></tr>
+              <tr><td><code>/var/lib/sideyard/master.key</code></td><td>Decrypts variables. Without it, they're lost.</td></tr>
+              <tr><td><code>/var/lib/sideyard/projects/&lt;name&gt;/</code></td><td><code>data/</code> (the app's <code>$DATA_DIR</code>) and <code>releases/</code> (the last five binaries)</td></tr>
+            </table>
+          </div>
+          <div class="table">
+            <table>
+              <tr><th>Setting</th><th>Meaning</th></tr>
+              <tr><td><code>SIDEYARD_DOMAIN</code></td><td>Base domain; projects get <code>&lt;name&gt;.&lt;domain&gt;</code></td></tr>
+              <tr><td><code>SIDEYARD_PUBLIC_IP</code></td><td>The server's public IPv4, for checking where domains point when the VM is behind NAT</td></tr>
+              <tr><td><code>SIDEYARD_DASHBOARD_HOST</code></td><td>Serve the dashboard somewhere other than <code>sideyard.&lt;domain&gt;</code></td></tr>
+              <tr><td><code>SIDEYARD_UPDATE_SOURCE</code></td><td>Where to look for releases (a fork's repository), or <code>off</code></td></tr>
+            </table>
+          </div>
+          <p>To uninstall, which lists everything it removes and asks before doing it:</p>
+          <div class="code"><pre><code>curl -fsSL https://github.com/rabeeh-ta/sideyard/releases/latest/download/install.sh \
+  | sudo bash -s -- --uninstall</code></pre></div>
+        </section>
+
+        <section id="limits">
+          <h2>Limits</h2>
+          <ul>
+            <li>No Postgres, Redis, Docker, queues or other runtimes, by design. Build it with SQLite, goroutines and <a href="#jobs">jobs</a>.</li>
+            <li>One server: no replicas or autoscaling. Backups protect your data, not your uptime.</li>
+            <li>Sideyard doesn't sign in your app's users; the app handles its own accounts.</li>
+            <li>One admin user, signing in with a password.</li>
+            <li>No alerts yet. Health and backup failures show in the dashboard and logs.</li>
+            <li>Rolling back a release doesn't roll back its migrations.</li>
+          </ul>
+          <p class="note">
+            How it works inside: <a href="https://github.com/rabeeh-ta/sideyard/blob/master/docs/architecture.md">architecture</a>
+            and <a href="https://github.com/rabeeh-ta/sideyard/blob/master/docs/mcp.md">MCP</a>.
+          </p>
+        </section>
+      </article>
+    </main>
+
+    <footer>
+      <div class="wrap foot">
+        <span class="logo"><svg width="22" height="22"><use href="#i-logo" /></svg>sideyard</span>
+        <nav aria-label="Footer">
+          <a href="../">Home</a>
+          <a href="https://github.com/rabeeh-ta/sideyard">GitHub</a>
+          <a href="https://github.com/rabeeh-ta/sideyard/blob/master/docs/architecture.md">Architecture</a>
+        </nav>
+      </div>
+      <div class="wordmark" aria-hidden="true">sideyard</div>
+    </footer>
+
+    <script>
+      // A copy button on every code block.
+      for (const block of document.querySelectorAll('.code')) {
+        const button = document.createElement('button')
+        button.className = 'btn small'
+        button.textContent = 'Copy'
+        button.addEventListener('click', async () => {
+          await navigator.clipboard.writeText(block.querySelector('code').textContent)
+          button.textContent = 'Copied'
+          setTimeout(() => (button.textContent = 'Copy'), 1600)
+        })
+        block.append(button)
+      }
+
+      // Contents: mark the section being read.
+      const links = new Map([...document.querySelectorAll('.toc a')].map((a) => [a.hash.slice(1), a]))
+      const visible = new Set()
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) e.isIntersecting ? visible.add(e.target.id) : visible.delete(e.target.id)
+          const current = [...links.keys()].find((id) => visible.has(id))
+          if (current) for (const [id, a] of links) a.classList.toggle('on', id === current)
+        },
+        { rootMargin: '-80px 0px -60% 0px' },
+      )
+      for (const id of links.keys()) observer.observe(document.getElementById(id))
+    </script>
+  </body>
+</html>

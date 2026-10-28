@@ -1,0 +1,306 @@
+/* Shared by the landing page and the docs: colours, type, header, buttons, footer. */
+:root {
+  --bg: #faf6f0;
+  --bg-2: #f2ebe1;
+  --card: #fffdfa;
+  --ink: #1f1a16;
+  --ink-2: #5f564e;
+  --ink-3: #786d63;
+  --line: #ebe2d6;
+  --hole: var(--card);
+  --mark: #ffb8ee;
+  --mark-2: #b4ecd0;
+
+  --red: #ff4f4f;
+  --orange: #ff8a1f;
+  --yellow: #ffc21a;
+  --green: #22c17a;
+  --blue: #2f7bff;
+  --pink: #f48fe0;
+  --purple: #8b5cf6;
+  --on-color: #1d1712;
+  --chart-hi: #d4383d;
+  --chart-lo: #b5a99d;
+  --cta: #d4383d;
+  --cta-ink: #ffffff;
+  --sel: #1f1a16;
+  --sel-ink: #faf6f0;
+
+  --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+/* Four styles: cream (light) and night (dark) follow the system; the
+   hero badge's dots cycle through all four and set data-theme. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #121212;
+    --bg-2: #181818;
+    --card: #1c1c1c;
+    --ink: #ffffff;
+    --ink-2: #a8a8a8;
+    --ink-3: #7c7c7c;
+    --line: #2a2a2a;
+    --mark: #8f2f7c;
+    --mark-2: #12643f;
+    --chart-hi: #22a85f;
+    --chart-lo: #6b6b6b;
+    --cta: #22c17a;
+    --cta-ink: #0d1912;
+    --sel: #3a3a3a;
+    --sel-ink: #ffffff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --bg: #121212;
+  --bg-2: #181818;
+  --card: #1c1c1c;
+  --ink: #ffffff;
+  --ink-2: #a8a8a8;
+  --ink-3: #7c7c7c;
+  --line: #2a2a2a;
+  --mark: #8f2f7c;
+  --mark-2: #12643f;
+  --chart-hi: #22a85f;
+  --chart-lo: #6b6b6b;
+  --cta: #22c17a;
+  --cta-ink: #0d1912;
+  --sel: #3a3a3a;
+  --sel-ink: #ffffff;
+  color-scheme: dark;
+}
+:root[data-theme='grape'] {
+  --bg: #120f1a;
+  --bg-2: #18141f;
+  --card: #1c1826;
+  --ink: #f5f3f9;
+  --ink-2: #aaa4ba;
+  --ink-3: #857f97;
+  --line: #2b2638;
+  --mark: #5b3a8c;
+  --mark-2: #1d5f4c;
+  --chart-hi: #ffc21a;
+  --chart-lo: #625c75;
+  --cta: #ffc21a;
+  --cta-ink: #1d1712;
+  --sel: #302a3f;
+  --sel-ink: #ffffff;
+  color-scheme: dark;
+}
+:root[data-theme='sky'] {
+  --bg: #f4f6fa;
+  --bg-2: #e9edf4;
+  --card: #ffffff;
+  --ink: #0f1729;
+  --ink-2: #4a5468;
+  --ink-3: #646d81;
+  --line: #e1e6ee;
+  --mark: #cfe0ff;
+  --mark-2: #c6efd9;
+  --chart-hi: #2a6cf0;
+  --chart-lo: #a3acbd;
+  --cta: #2a6cf0;
+  --cta-ink: #ffffff;
+  --sel: #0f1729;
+  --sel-ink: #ffffff;
+  color-scheme: light;
+}
+/* While switching styles, colours ease instead of jumping. */
+html.theming,
+html.theming * {
+  transition:
+    background-color 0.4s,
+    color 0.4s,
+    border-color 0.4s,
+    box-shadow 0.4s,
+    fill 0.4s,
+    stroke 0.4s,
+    stop-color 0.4s !important;
+}
+
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 17px/1.6 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+a {
+  color: inherit;
+}
+code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  background: var(--bg-2);
+  border-radius: 6px;
+  padding: 0.12em 0.4em;
+}
+:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+.wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+@media (max-width: 640px) {
+  .wrap {
+    padding: 0 16px;
+  }
+}
+/* Header */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+header .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 68px;
+  gap: 16px;
+}
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  font-weight: 600;
+  font-size: 15px;
+}
+nav a {
+  text-decoration: none;
+  color: var(--ink-2);
+}
+nav a:hover {
+  color: var(--ink);
+}
+@media (max-width: 720px) {
+  nav .wide {
+    display: none;
+  }
+  nav {
+    gap: 16px;
+  }
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 22px;
+  border-radius: 12px;
+  border: 0;
+  background: var(--card);
+  color: var(--ink);
+  font: 700 16px var(--sans);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  transition: transform 0.15s;
+}
+.btn:hover {
+  transform: translateY(-1px);
+}
+.btn.primary {
+  background: var(--cta);
+  color: var(--cta-ink);
+  box-shadow: 0 8px 22px -10px color-mix(in srgb, var(--cta) 80%, transparent);
+}
+.btn.pink {
+  background: var(--pink);
+  color: var(--on-color);
+  box-shadow: none;
+}
+.btn.small {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 14px;
+  border-radius: 10px;
+}
+nav .btn {
+  color: var(--cta-ink);
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.version {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font: 600 12px var(--mono);
+  color: var(--ink-2);
+  text-decoration: none;
+  box-shadow: inset 0 0 0 1.5px var(--line);
+}
+.version:hover {
+  color: var(--ink);
+}
+
+/* Footer */
+footer {
+  margin-top: 120px;
+  overflow: hidden;
+}
+.foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+.foot nav {
+  gap: 24px;
+}
+@media (max-width: 640px) {
+  .foot nav a {
+    padding: 8px 0;
+  }
+}
+.wordmark {
+  font-weight: 700;
+  font-size: clamp(80px, 21vw, 280px);
+  letter-spacing: -0.06em;
+  line-height: 0.8;
+  text-align: center;
+  margin: 48px 0 -0.12em;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 12%, transparent), transparent 85%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  user-select: none;
+}
