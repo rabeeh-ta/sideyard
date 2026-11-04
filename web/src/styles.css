@@ -1187,36 +1187,146 @@ h1 .badge {
   font-size: 12.5px;
 }
 
+/* --- the storage browser --- */
+
+.crumbs a {
+  color: var(--text-2);
+  text-decoration: none;
+}
+
+.crumbs a:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.browser-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 8px;
+}
+
+.selection-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-size: 12.5px;
+}
+
 .object-row {
   display: grid;
-  grid-template-columns: 1fr 80px 110px auto;
-  gap: 14px;
+  grid-template-columns: 18px minmax(0, 1fr) 80px 90px 86px;
+  gap: 12px;
   align-items: center;
-  padding: 7px 0;
+  min-height: 36px;
+  padding: 0 4px;
   border-bottom: 1px solid var(--border);
 }
 
-.object-row:last-child {
+/* a big folder scrolls inside the card instead of stretching the page */
+.objects {
+  /* the card's header, toolbar and the bucket card above it fit around it */
+  max-height: max(240px, calc(100vh - 430px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.objects .object-row:last-child {
   border-bottom: none;
 }
 
-.object-name {
-  font-family: var(--mono);
-  font-size: 12.5px;
+.object-row.selected {
+  background: var(--surface-2);
 }
 
-.folder {
+.object-head {
+  min-height: 28px;
+  font-size: 11.5px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.object-row .num {
+  text-align: right;
+}
+
+.object-row .row-actions {
+  justify-content: flex-end;
+}
+
+/* a name is a button: it opens the folder or the file's details */
+.object-name {
+  justify-content: flex-start;
+  min-width: 0;
+  padding: 4px 0;
   border: none;
   background: none;
-  padding: 0;
   font-family: var(--mono);
   font-size: 12.5px;
+  text-align: left;
+}
+
+.object-name svg {
+  flex-shrink: 0;
+  color: var(--text-3);
+}
+
+.object-name:hover:not(:disabled) {
+  background: none;
+}
+
+.object-name:hover .ellipsis {
+  text-decoration: underline;
+}
+
+.object-name.folder {
   font-weight: 600;
 }
 
-.folder:hover:not(:disabled) {
-  background: none;
-  text-decoration: underline;
+.object-name.folder svg {
+  color: var(--brand);
+}
+
+.browser .empty {
+  padding: 18px 0 6px;
+}
+
+.browser-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.browser.dropping {
+  outline: 2px dashed var(--brand);
+  outline-offset: -6px;
+}
+
+.object-details .kv-row {
+  grid-template-columns: 80px minmax(0, 1fr);
+}
+
+details.help {
+  margin-top: 12px;
+}
+
+details.help summary {
+  cursor: pointer;
+  color: var(--text-2);
+}
+
+details.help p {
+  margin: 6px 0 0;
 }
 
 .job-row {
@@ -1754,6 +1864,12 @@ table.coldefs input:not([type='checkbox']) {
 
 @media (max-width: 640px) {
   /* rows that are columns on a desk stack on a phone */
+  .object-row {
+    grid-template-columns: 18px minmax(0, 1fr) 64px 76px;
+  }
+  .object-row .col-modified {
+    display: none;
+  }
   .page-head {
     flex-wrap: wrap;
   }

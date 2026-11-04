@@ -155,21 +155,22 @@ func (p *Platform) storageClient(name string) (*s3.Client, error) {
 }
 
 // Objects lists one "folder" of the project's bucket.
-func (p *Platform) Objects(ctx context.Context, name, prefix, startAfter string) ([]s3.Object, bool, error) {
+func (p *Platform) Objects(ctx context.Context, name, prefix, token string) ([]s3.Object, string, error) {
 	c, err := p.storageClient(name)
 	if err != nil {
-		return nil, false, err
+		return nil, "", err
 	}
-	return c.List(ctx, prefix, startAfter, 200)
+	return c.List(ctx, prefix, token, 200)
 }
 
-// ObjectURL is a five-minute download link straight from the provider.
-func (p *Platform) ObjectURL(ctx context.Context, name, key string) (string, error) {
+// ObjectURL is a five-minute link straight from the provider that downloads
+// the object, or with inline, shows it in the browser.
+func (p *Platform) ObjectURL(ctx context.Context, name, key string, inline bool) (string, error) {
 	c, err := p.storageClient(name)
 	if err != nil {
 		return "", err
 	}
-	return c.PresignGet(ctx, key, 5*time.Minute)
+	return c.PresignGet(ctx, key, 5*time.Minute, inline)
 }
 
 func (p *Platform) PutObject(ctx context.Context, name, key string, r io.Reader, size int64, contentType string) error {

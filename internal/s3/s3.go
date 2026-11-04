@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -99,26 +100,37 @@ type Object struct {
 	IsPrefix bool `json:"isPrefix,omitempty"`
 }
 
-// List returns up to limit entries directly under prefix, folders first as
-// S3 orders them, starting after startAfter. more reports whether there are
-// further entries.
-func (c *Client) List(ctx context.Context, prefix, startAfter string, limit int) (entries []Object, more bool, err error) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	opts := minio.ListObjectsOptions{Prefix: prefix, StartAfter: startAfter}
-	for obj := range c.mc.ListObjects(ctx, c.bucket, opts) {
-		if obj.Err != nil {
-			return nil, false, describe(obj.Err)
-		}
-		if len(entries) == limit {
-			return entries, true, nil
-		}
-		entries = append(entries, Object{
-			Key: obj.Key, Size: obj.Size, ModifiedAt: obj.LastModified.UTC(),
-			IsPrefix: strings.HasSuffix(obj.Key, "/") && obj.Size == 0 && obj.LastModified.IsZero(),
-		})
+// List returns up to limit entries directly under prefix, in name order,
+// with folders as entries ending in /. The first page takes an empty token;
+// next is the token for the page after, empty after the last one.
+//
+// It reads one S3 response, whose files and folders together are the first
+// limit names, rather than minio's stream: that sends a response's files
+// before its folders, so stopping partway and going on from the last name
+// can skip or repeat entries.
+func (c *Client) List(_ context.Context, prefix, token string, limit int) (entries []Object, next string, err error) {
+	// Core's single-response listing takes no context; the request has the
+	// client's own timeouts.
+	res, err := minio.Core{Client: c.mc}.ListObjectsV2(c.bucket, prefix, "", token, "/", limit)
+	if err != nil {
+		return nil, "", describe(err)
 	}
-	return entries, false, nil
+	for _, p := range res.CommonPrefixes {
+		entries = append(entries, Object{Key: p.Prefix, IsPrefix: true})
+	}
+	for _, o := range res.Contents {
+		// A console's "create folder" leaves an empty object named like
+		// the folder; it is the folder being listed, not a file in it.
+		if o.Key == prefix {
+			continue
+		}
+		entries = append(entries, Object{Key: o.Key, Size: o.Size, ModifiedAt: o.LastModified.UTC()})
+	}
+	slices.SortFunc(entries, func(a, b Object) int { return strings.Compare(a.Key, b.Key) })
+	if res.IsTruncated {
+		next = res.NextContinuationToken
+	}
+	return entries, next, nil
 }
 
 // Walk lists every object under prefix, recursively, up to max.
@@ -162,12 +174,18 @@ func (c *Client) Delete(ctx context.Context, key string) error {
 	return describe(c.mc.RemoveObject(ctx, c.bucket, key, minio.RemoveObjectOptions{}))
 }
 
-// PresignGet returns a short-lived URL that downloads the object as a file
-// straight from the provider.
-func (c *Client) PresignGet(ctx context.Context, key string, ttl time.Duration) (string, error) {
+// PresignGet returns a short-lived URL to the object, straight from the
+// provider: one that downloads it as a file, or with inline, one a browser
+// shows if it can (an image, a PDF, text). It's served from the provider's
+// domain, so what a file holds never runs as the dashboard.
+func (c *Client) PresignGet(ctx context.Context, key string, ttl time.Duration, inline bool) (string, error) {
 	name := key[strings.LastIndex(key, "/")+1:]
+	disposition := "attachment"
+	if inline {
+		disposition = "inline"
+	}
 	params := url.Values{}
-	params.Set("response-content-disposition", fmt.Sprintf("attachment; filename=%q", name))
+	params.Set("response-content-disposition", fmt.Sprintf("%s; filename=%q", disposition, name))
 	u, err := c.mc.PresignedGetObject(ctx, c.bucket, key, ttl, params)
 	if err != nil {
 		return "", describe(err)

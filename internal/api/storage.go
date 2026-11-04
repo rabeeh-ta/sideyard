@@ -55,7 +55,8 @@ func writeRestart(w http.ResponseWriter, restarted bool, err error) {
 
 func (s *Server) listObjects(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	objs, more, err := s.p.Objects(r.Context(), r.PathValue("name"), q.Get("prefix"), q.Get("after"))
+	// next is the token from the previous page's answer.
+	objs, next, err := s.p.Objects(r.Context(), r.PathValue("name"), q.Get("prefix"), q.Get("next"))
 	if err != nil {
 		writeErr(w, err)
 		return
@@ -63,13 +64,14 @@ func (s *Server) listObjects(w http.ResponseWriter, r *http.Request) {
 	if objs == nil {
 		objs = []s3.Object{}
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"objects": objs, "more": more})
+	writeJSON(w, http.StatusOK, map[string]any{"objects": objs, "next": next})
 }
 
 // downloadObject redirects to a short-lived link on the provider, so large
 // files don't pass through Sideyard.
 func (s *Server) downloadObject(w http.ResponseWriter, r *http.Request) {
-	u, err := s.p.ObjectURL(r.Context(), r.PathValue("name"), r.URL.Query().Get("key"))
+	q := r.URL.Query()
+	u, err := s.p.ObjectURL(r.Context(), r.PathValue("name"), q.Get("key"), q.Get("inline") == "1")
 	if err != nil {
 		writeErr(w, err)
 		return

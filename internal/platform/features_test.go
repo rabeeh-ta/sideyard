@@ -80,7 +80,7 @@ func TestStorage(t *testing.T) {
 	if err != nil || len(inner) != 1 || inner[0].Key != "docs/a.txt" {
 		t.Fatalf("docs/: %+v %v", inner, err)
 	}
-	if u, err := p.ObjectURL(ctx, "demo", "docs/a.txt"); err != nil || !strings.Contains(u, "Signature") {
+	if u, err := p.ObjectURL(ctx, "demo", "docs/a.txt", false); err != nil || !strings.Contains(u, "Signature") {
 		t.Fatalf("download URL: %q %v", u, err)
 	}
 	if u, err := p.StorageUsage(ctx, "demo"); err != nil || u.Objects != 1 || u.Bytes != 5 {

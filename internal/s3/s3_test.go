@@ -33,9 +33,9 @@ func TestRoundTrip(t *testing.T) {
 		}
 	}
 
-	top, more, err := c.List(ctx, "", "", 100)
-	if err != nil || more {
-		t.Fatalf("list: %v more=%v", err, more)
+	top, next, err := c.List(ctx, "", "", 100)
+	if err != nil || next != "" {
+		t.Fatalf("list: %v next=%q", err, next)
 	}
 	var keys []string
 	for _, o := range top {
@@ -48,9 +48,37 @@ func TestRoundTrip(t *testing.T) {
 		t.Fatalf("prefix flags wrong: %+v", top)
 	}
 
-	page, more, err := c.List(ctx, "uploads/", "", 1)
-	if err != nil || !more || len(page) != 1 {
-		t.Fatalf("paged list: %+v more=%v err=%v", page, more, err)
+	page, next, err := c.List(ctx, "uploads/", "", 1)
+	if err != nil || next == "" || len(page) != 1 {
+		t.Fatalf("paged list: %+v next=%q err=%v", page, next, err)
+	}
+	// Pages are in name order, folders among files, and the empty object a
+	// console's "create folder" leaves isn't an entry of its own folder.
+	for _, key := range []string{"pages/a/1.txt", "pages/b.txt", "pages/c/3.txt", "pages/"} {
+		if err := c.Put(ctx, key, strings.NewReader("x"), 1, "text/plain"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	listed, _, err := c.List(ctx, "pages/", "", 100)
+	if got := keysOf(listed); err != nil || got != "pages/a/,pages/b.txt,pages/c/" {
+		t.Fatalf("pages/ = %q %v", got, err)
+	}
+	// Tokens page through a folder. (The fake goes on from inside a folder
+	// that ends a page, unlike S3, so the boundaries here are files.)
+	var seen []Object
+	for token := ""; ; {
+		page, next, err := c.List(ctx, "uploads/", token, 1)
+		if err != nil || len(seen) > 5 {
+			t.Fatalf("page %q: %+v %v", token, page, err)
+		}
+		seen = append(seen, page...)
+		if next == "" {
+			break
+		}
+		token = next
+	}
+	if got := keysOf(seen); got != "uploads/a.txt,uploads/b.txt,uploads/deep/" {
+		t.Fatalf("uploads/ in pages = %q", got)
 	}
 
 	all, truncated, err := c.Walk(ctx, "uploads/", 100)
@@ -68,7 +96,7 @@ func TestRoundTrip(t *testing.T) {
 		t.Fatalf("get = %q", body)
 	}
 
-	u, err := c.PresignGet(ctx, "readme.txt", time.Minute)
+	u, err := c.PresignGet(ctx, "readme.txt", time.Minute, false)
 	if err != nil || !strings.Contains(u, "X-Amz-Signature") {
 		t.Fatalf("presign: %q %v", u, err)
 	}
@@ -108,4 +136,12 @@ func TestEndpointURL(t *testing.T) {
 			t.Errorf("%+v: got %s, want %s", in, got, want)
 		}
 	}
+}
+
+func keysOf(objects []Object) string {
+	var keys []string
+	for _, o := range objects {
+		keys = append(keys, o.Key)
+	}
+	return strings.Join(keys, ",")
 }

@@ -69,7 +69,7 @@ export function ProjectRoutes({ name, section, sub }: { name: string; section: s
       {section === 'deployments' && <DeploymentsTab project={project} onChange={reload} />}
       {section === 'logs' && <LogsTab name={name} />}
       {section === 'database' && <DatabaseTab name={name} onChange={reload} />}
-      {section === 'storage' && <StorageTab name={name} />}
+      {section === 'storage' && <StorageTab name={name} prefix={sub ?? ''} />}
       {section === 'jobs' && <JobsTab name={name} />}
       {section === 'email' && <EmailTab name={name} />}
       {section === 'variables' && <VariablesTab name={name} />}

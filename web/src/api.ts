@@ -432,12 +432,15 @@ export const api = {
   connectStorage: (name: string, input: StorageInput) =>
     request<{ restarted: boolean; error?: string }>('PUT', `${p(name)}/storage`, input),
   disconnectStorage: (name: string) => request<{ restarted: boolean; error?: string }>('DELETE', `${p(name)}/storage`),
-  objects: (name: string, prefix: string, after = '') =>
-    request<{ objects: S3Object[]; more: boolean }>(
+  /** One page of a folder; next is the token for the page after it, empty on the last. */
+  objects: (name: string, prefix: string, next = '') =>
+    request<{ objects: S3Object[]; next: string }>(
       'GET',
-      `${p(name)}/storage/objects?prefix=${encodeURIComponent(prefix)}&after=${encodeURIComponent(after)}`,
+      `${p(name)}/storage/objects?prefix=${encodeURIComponent(prefix)}&next=${encodeURIComponent(next)}`,
     ),
-  objectURL: (name: string, key: string) => `${p(name)}/storage/download?key=${encodeURIComponent(key)}`,
+  /** A link to the object: it downloads, or with inline, opens in the browser if the browser can show it. */
+  objectURL: (name: string, key: string, inline = false) =>
+    `${p(name)}/storage/download?key=${encodeURIComponent(key)}${inline ? '&inline=1' : ''}`,
   deleteObject: (name: string, key: string) =>
     request<void>('DELETE', `${p(name)}/storage/objects?key=${encodeURIComponent(key)}`),
   uploadObject: (name: string, prefix: string, file: File, onProgress: (fraction: number) => void) =>

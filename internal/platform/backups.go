@@ -446,7 +446,7 @@ func (p *Platform) BackupURL(ctx context.Context, name, dbPath, key string) (str
 	if err != nil {
 		return "", err
 	}
-	return client.PresignGet(ctx, key, 5*time.Minute)
+	return client.PresignGet(ctx, key, 5*time.Minute, false)
 }
 
 // HumanBytes formats a size for people: 512 B, 14 KB, 3.2 MB, 1.1 GB.
