@@ -418,10 +418,10 @@ curl --fail-with-body -H "Authorization: Bearer $SIDEYARD_TOKEN" -F binary=@app 
           <p>
             Every project gets <code>&lt;name&gt;.example.com</code> from the wildcard record. To add your own domain,
             point an A record (AAAA for IPv6) at the server, or a CNAME at <code>sideyard.example.com</code> for a
-            subdomain, then add it in <strong>Settings → Domains</strong>. HTTPS is set up automatically. Behind
+            subdomain, then add it on the project's <strong>Domains</strong> page. HTTPS is set up automatically. Behind
             Cloudflare, keep the record <em>DNS only</em>.
           </p>
-          <p>The list shows whether each domain points at this server and which certificate Sideyard holds for it.</p>
+          <p>The page shows the DNS record each domain needs, whether it points at this server yet, and which certificate Sideyard holds for it.</p>
         </section>
 
         <section id="database">

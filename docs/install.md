@@ -95,7 +95,7 @@ To set a new admin password: `sudo sideyard reset-password` prints one and signs
 
 ### Changing the domain
 
-Point the new domain at the server (step 1), set `SIDEYARD_DOMAIN` to it and restart. The dashboard moves to `sideyard.<new domain>` and new projects get `<name>.<new domain>`. Projects you already have keep their addresses: add the new one in each project's **Settings → Domains** and remove the old.
+Point the new domain at the server (step 1), set `SIDEYARD_DOMAIN` to it and restart. The dashboard moves to `sideyard.<new domain>` and new projects get `<name>.<new domain>`. Projects you already have keep their addresses: add the new one on each project's **Domains** page and remove the old.
 
 ## What to back up
 

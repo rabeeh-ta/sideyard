@@ -1,80 +1,19 @@
 import { useState, type FormEvent } from 'react'
-import { api, errorMessage, type DomainStatus, type Project } from './api'
+import { api, errorMessage, type Project } from './api'
 import { useServer } from './App'
 import { DeploySetup } from './DeploySetup'
-import { go, usePoll } from './lib'
-import { Pill, Section } from './ui'
+import { go } from './lib'
+import { Section } from './ui'
 
 export function SettingsTab({ project, onChange }: { project: Project; onChange: () => void }) {
   return (
     <>
-      <DomainsSection project={project} onChange={onChange} />
       <RuntimeSection project={project} onChange={onChange} />
       <Section title="Deploy token" description="CI uses this token to upload releases.">
         <DeploySetup name={project.name} steps={false} />
       </Section>
       <DeleteSection name={project.name} />
     </>
-  )
-}
-
-function DomainsSection({ project, onChange }: { project: Project; onChange: () => void }) {
-  const server = useServer()
-  const [host, setHost] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const { data: statuses, reload } = usePoll(() => api.domainStatus(project.name), 0, project.domains.join(','))
-
-  async function run(fn: () => Promise<unknown>) {
-    setError(null)
-    try {
-      await fn()
-      setHost('')
-    } catch (e) {
-      setError(errorMessage(e))
-    } finally {
-      onChange()
-      reload()
-    }
-  }
-
-  return (
-    <Section
-      title="Domains"
-      description={
-        server?.dev
-          ? 'Dev mode: *.localhost names resolve to this machine in most browsers.'
-          : 'Point an A record for each domain at this server; HTTPS is set up automatically.'
-      }
-    >
-      <div className="kv">
-        {project.domains.map((d) => (
-          <div key={d} className="kv-row domain">
-            <div>
-              <code className="kv-key">{d}</code>
-              <DomainChecks status={statuses?.find((x) => x.host === d)} dev={!!server?.dev} />
-            </div>
-            <div className="row-actions">
-              <button className="ghost small" onClick={() => run(() => api.removeDomain(project.name, d))}>
-                Remove
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-      <form
-        className="inline-form"
-        onSubmit={(e) => {
-          e.preventDefault()
-          run(() => api.addDomain(project.name, host))
-        }}
-      >
-        <input className="grow" placeholder="app.example.com" value={host} onChange={(e) => setHost(e.target.value)} />
-        <button className="ghost" disabled={!host.trim()}>
-          Add domain
-        </button>
-      </form>
-      {error && <p className="error">{error}</p>}
-    </Section>
   )
 }
 
@@ -184,43 +123,4 @@ function DeleteSection({ name }: { name: string }) {
       {error && <p className="error">{error}</p>}
     </Section>
   )
-}
-
-/** Whether a domain resolves to this server and has a certificate. */
-function DomainChecks({ status, dev }: { status?: DomainStatus; dev: boolean }) {
-  if (!status) return null
-  const cert = status.certificate
-  // Caddy renews with a third of a certificate's lifetime left (30 of 90
-  // days, 4 of 12 hours for its own CA); a quarter left means it's late.
-  const left = cert ? new Date(cert.notAfter).getTime() - Date.now() : 0
-  const late = cert ? left < (new Date(cert.notAfter).getTime() - new Date(cert.notBefore).getTime()) / 4 : false
-  return (
-    <div className="domain-status" style={{ marginTop: 6 }}>
-      {status.dnsError ? (
-        <Pill tone="red">DNS: {status.dnsError}</Pill>
-      ) : status.pointsHere === false ? (
-        <Pill tone="red">DNS points elsewhere: {status.addresses.join(', ')}</Pill>
-      ) : status.pointsHere ? (
-        <Pill tone="green">DNS points here</Pill>
-      ) : (
-        <Pill tone="grey">DNS: {status.addresses.join(', ')}</Pill>
-      )}
-      {dev ? (
-        <Pill tone="grey">dev mode: plain HTTP</Pill>
-      ) : cert ? (
-        <Pill tone={late ? 'amber' : 'green'}>
-          HTTPS by {cert.issuer} · {late ? `expires in ${duration(left)}, renewal is late` : 'renews automatically'}
-        </Pill>
-      ) : (
-        <Pill tone="amber">no certificate yet: issued on the first visit once DNS points here</Pill>
-      )}
-    </div>
-  )
-}
-
-/** "3 hours", "64 days". */
-function duration(ms: number): string {
-  const hours = Math.max(0, Math.floor(ms / 3600000))
-  if (hours < 48) return hours === 1 ? '1 hour' : `${hours} hours`
-  return `${Math.floor(hours / 24)} days`
 }

@@ -7,6 +7,7 @@ import {
   ChevronsUpDown,
   Clock,
   Database,
+  Globe,
   House,
   KeyRound,
   LayoutGrid,
@@ -114,6 +115,7 @@ const projectNav: NavItem[] = [
   { section: 'deployments', label: 'Deployments', icon: Rocket },
   { section: 'logs', label: 'Logs', icon: ScrollText },
   { section: 'variables', label: 'Variables', icon: KeyRound },
+  { section: 'domains', label: 'Domains', icon: Globe },
   { section: 'settings', label: 'Project settings', icon: Settings },
 ]
 

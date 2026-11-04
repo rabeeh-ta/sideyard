@@ -270,6 +270,8 @@ export type DomainStatus = {
   addresses: string[]
   pointsHere: boolean | null
   dnsError?: string
+  /** The records that point the domain here, empty when the server's public address isn't known. */
+  records: { type: string; name: string; value: string }[]
   certificate: { issuer: string; notBefore: string; notAfter: string } | null
 }
 

@@ -393,15 +393,11 @@ The upload returns once the release is live (HTTP 200) or has failed (HTTP 422, 
 			var b strings.Builder
 			fmt.Fprintf(&b, "Added %s. Create this DNS record at the domain's DNS provider, as DNS only (not proxied: Cloudflare's grey cloud), so Sideyard can get the certificate itself:\n\n", host)
 			fmt.Fprintf(&b, "  %s  CNAME  %s   (for a subdomain)\n", host, s.p.Config().DashboardHost)
-			addrs := s.p.PublicAddresses(ctx)
-			for _, a := range addrs {
-				kind := "A"
-				if strings.Contains(a, ":") {
-					kind = "AAAA"
-				}
-				fmt.Fprintf(&b, "  %s  %s  %s   (for an apex domain such as example.com)\n", host, kind, a)
+			records := platform.AddressRecords(host, s.p.PublicAddresses(ctx))
+			for _, r := range records {
+				fmt.Fprintf(&b, "  %s  %s  %s   (for an apex domain such as example.com)\n", r.Name, r.Type, r.Value)
 			}
-			if len(addrs) == 0 {
+			if len(records) == 0 {
 				b.WriteString("  or, for an apex domain such as example.com, an A record with this server's public IP address\n")
 			}
 			b.WriteString("\nThen call check_domains: pointsHere turns true once the record has spread, and a certificate follows the first HTTPS request.")

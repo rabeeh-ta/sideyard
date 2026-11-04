@@ -7,6 +7,7 @@ import { appURL, formatBytes, timeAgo, uptime, usePoll } from './lib'
 import { PageHead, ReleaseBadge, Stat, StatusBadge } from './ui'
 import { VariablesTab } from './VariablesTab'
 import { SettingsTab } from './SettingsTab'
+import { DomainsTab } from './DomainsTab'
 import { DatabaseTab } from './DatabaseTab'
 import { StorageTab } from './StorageTab'
 import { JobsTab } from './JobsTab'
@@ -29,7 +30,8 @@ const sections: Record<string, { title: string; description?: string }> = {
   jobs: { title: 'Jobs', description: 'Scheduled calls into the app.' },
   email: { title: 'Email', description: 'Who this project sends as, and what it has sent.' },
   variables: { title: 'Variables', description: 'Environment variables and secrets for the app.' },
-  settings: { title: 'Settings', description: 'Domains, runtime, deploy token.' },
+  domains: { title: 'Domains', description: 'Where this project answers. Each domain gets HTTPS automatically.' },
+  settings: { title: 'Settings', description: 'Runtime, deploy token.' },
 }
 
 /** Full-bleed sections fill the window; the rest are pages. */
@@ -71,6 +73,7 @@ export function ProjectRoutes({ name, section, sub }: { name: string; section: s
       {section === 'jobs' && <JobsTab name={name} />}
       {section === 'email' && <EmailTab name={name} />}
       {section === 'variables' && <VariablesTab name={name} />}
+      {section === 'domains' && <DomainsTab project={project} onChange={reload} />}
       {section === 'settings' && <SettingsTab project={project} onChange={reload} />}
     </div>
   )

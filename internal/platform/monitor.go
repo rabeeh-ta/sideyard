@@ -165,8 +165,32 @@ type DomainStatus struct {
 	// PointsHere is nil when Sideyard can't tell (no reference address).
 	PointsHere *bool  `json:"pointsHere"`
 	DNSError   string `json:"dnsError,omitempty"`
+	// Records point the domain here; empty when the server's public
+	// addresses aren't known.
+	Records []DNSRecord `json:"records"`
 	// Certificate is nil until one has been issued (never in dev mode).
 	Certificate *CertInfo `json:"certificate"`
+}
+
+// DNSRecord is one record to create at a domain's DNS provider.
+type DNSRecord struct {
+	Type  string `json:"type"`
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// AddressRecords are the A and AAAA records pointing host at addrs. They
+// work for any domain; a subdomain could use a CNAME instead.
+func AddressRecords(host string, addrs []string) []DNSRecord {
+	out := []DNSRecord{}
+	for _, a := range addrs {
+		kind := "A"
+		if strings.Contains(a, ":") {
+			kind = "AAAA"
+		}
+		out = append(out, DNSRecord{Type: kind, Name: host, Value: a})
+	}
+	return out
 }
 
 type CertInfo struct {
@@ -186,10 +210,11 @@ func (p *Platform) DomainStatus(ctx context.Context, name string) ([]DomainStatu
 	}
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	here := p.serverAddresses(ctx)
+	public := p.PublicAddresses(ctx)
+	here := append(slices.Clone(public), interfaceAddresses()...)
 	out := []DomainStatus{}
 	for _, host := range domains[proj.ID] {
-		ds := DomainStatus{Host: host, Addresses: []string{}}
+		ds := DomainStatus{Host: host, Addresses: []string{}, Records: AddressRecords(host, public)}
 		if p.cfg.Dev && (host == "localhost" || strings.HasSuffix(host, ".localhost")) {
 			yes := true
 			ds.Addresses, ds.PointsHere = []string{"127.0.0.1"}, &yes
@@ -223,13 +248,15 @@ func (p *Platform) PublicAddresses(ctx context.Context) []string {
 			out = append(out, addrs...)
 		}
 	}
-	return out
+	// SIDEYARD_PUBLIC_IP is usually also what the dashboard host resolves to.
+	slices.Sort(out)
+	return slices.Compact(out)
 }
 
-// serverAddresses are the addresses this server is reached at: its public
-// addresses and the machine's own interfaces.
-func (p *Platform) serverAddresses(ctx context.Context) []string {
-	out := p.PublicAddresses(ctx)
+// interfaceAddresses are the machine's own addresses, which a domain may
+// also resolve to when the server isn't behind NAT.
+func interfaceAddresses() []string {
+	var out []string
 	if ifaces, err := net.InterfaceAddrs(); err == nil {
 		for _, a := range ifaces {
 			if ipn, ok := a.(*net.IPNet); ok && !ipn.IP.IsLoopback() {

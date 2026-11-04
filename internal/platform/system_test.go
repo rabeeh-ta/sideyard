@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -172,5 +173,20 @@ func TestUpdate(t *testing.T) {
 	p.version = "v1.1.0"
 	if st := p.UpdateStatus(); st.Last == nil || st.Last.From != "v1.0.0" || st.Last.To != "v1.1.0" {
 		t.Fatalf("last update: %+v", st.Last)
+	}
+}
+
+func TestDNSRecords(t *testing.T) {
+	// The installer's SIDEYARD_PUBLIC_IP is usually also what the dashboard
+	// host resolves to; each address is one record.
+	t.Setenv("SIDEYARD_PUBLIC_IP", "203.0.113.10, 2001:db8::1,203.0.113.10")
+	p := &Platform{cfg: config.Config{Dev: true}}
+	got := AddressRecords("shop.example", p.PublicAddresses(context.Background()))
+	want := []DNSRecord{{"AAAA", "shop.example", "2001:db8::1"}, {"A", "shop.example", "203.0.113.10"}}
+	if !slices.Equal(got, want) {
+		t.Errorf("records = %+v, want %+v", got, want)
+	}
+	if got := AddressRecords("shop.example", nil); got == nil || len(got) != 0 {
+		t.Errorf("no addresses: %#v, want an empty list (JSON [])", got)
 	}
 }
