@@ -207,6 +207,40 @@ start_service() {
   systemctl restart sideyard
 }
 
+# --- firewall -------------------------------------------------------------
+
+# reject_rule CMD (iptables or ip6tables) prints the number of the INPUT rule
+# that turns away everything reaching it, unless rules before it already let
+# in ports 80 and 443. Oracle Cloud's images ship with one, past which only
+# SSH gets. ufw keeps its own chains, so it's handled apart.
+reject_rule() {
+  command -v "$1" >/dev/null || return 0
+  "$1" -S INPUT 2>/dev/null | awk '
+    found { next }
+    /^-A INPUT / { n++ }
+    /^-A INPUT .*-p tcp.*-j ACCEPT/ {
+      if ($0 ~ /--dports? ([0-9,]*,)?80( |,|$)/) http = 1
+      if ($0 ~ /--dports? ([0-9,]*,)?443( |,|$)/) https = 1
+    }
+    /^-A INPUT -j (REJECT|DROP)( |$)/ {
+      found = 1
+      if (!(http && https)) print n
+    }'
+}
+
+# allow_web CMD lets ports 80 and 443 in ahead of CMD's reject rule.
+allow_web() {
+  local at port
+  at=$(reject_rule "$1")
+  [ -n "$at" ] || return 0
+  for port in 443 80; do
+    "$1" -C INPUT -p tcp -m state --state NEW -m tcp --dport "$port" -j ACCEPT 2>/dev/null ||
+      "$1" -I INPUT "$at" -p tcp -m state --state NEW -m tcp --dport "$port" -j ACCEPT
+  done
+}
+
+on_oracle_cloud() { [ "$(cat /sys/class/dmi/id/chassis_asset_tag 2>/dev/null)" = OracleCloud.com ]; }
+
 # --- upgrade --------------------------------------------------------------
 
 upgrade() {
@@ -348,12 +382,19 @@ fresh_install() {
     fi
   fi
 
-  local open_firewall=0
+  # Let's Encrypt reaches the server on port 80 to issue certificates.
+  local firewall=""
   if command -v ufw >/dev/null && ufw status 2>/dev/null | grep -q "Status: active"; then
     if confirm "ufw is on. Allow HTTP and HTTPS (ports 80 and 443) through it?"; then
-      open_firewall=1
+      firewall=ufw
     else
       warn "Leaving ufw as it is; open ports 80 and 443 yourself."
+    fi
+  elif [ -n "$(reject_rule iptables)$(reject_rule ip6tables)" ]; then
+    if confirm "This server's firewall (iptables) turns away connections to ports 80 and 443. Allow HTTP and HTTPS through it?"; then
+      firewall=iptables
+    else
+      warn "Leaving iptables as it is; open ports 80 and 443 yourself."
     fi
   fi
 
@@ -418,11 +459,23 @@ EOF
   chmod 644 "$UNIT_FILE.new"
   mv -f "$UNIT_FILE.new" "$UNIT_FILE"
 
-  if [ "$open_firewall" = 1 ]; then
+  case "$firewall" in
+  ufw)
     step "Allowing HTTP and HTTPS through ufw"
     ufw allow 80/tcp >/dev/null
     ufw allow 443/tcp >/dev/null
-  fi
+    ;;
+  iptables)
+    step "Allowing HTTP and HTTPS through iptables"
+    allow_web iptables
+    allow_web ip6tables
+    if command -v netfilter-persistent >/dev/null; then
+      netfilter-persistent save >/dev/null 2>&1 || warn "Couldn't save the iptables rules; ports 80 and 443 close again at the next reboot."
+    else
+      warn "Ports 80 and 443 close again at the next reboot. To keep them open: apt install iptables-persistent"
+    fi
+    ;;
+  esac
 
   step "Starting Sideyard"
   start_service
@@ -442,6 +495,13 @@ EOF
     warn "$domain comes from sslip.io and follows this server's IP address."
     say "  When you have a domain: set SIDEYARD_DOMAIN in $ENV_FILE, then"
     say "  sudo systemctl restart sideyard"
+  fi
+  if on_oracle_cloud; then
+    say ""
+    warn "Oracle Cloud has a firewall of its own, outside this server. If the dashboard"
+    say "  doesn't load, add an ingress rule to the subnet's security list (Networking →"
+    say "  your VCN → Security): source 0.0.0.0/0, TCP, destination ports 80,443. Then"
+    say "  sudo systemctl restart sideyard to get the certificate without waiting."
   fi
   say ""
   say "  Logs        journalctl -u sideyard -f"

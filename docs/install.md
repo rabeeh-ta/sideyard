@@ -2,6 +2,8 @@
 
 One command on a fresh Ubuntu or Debian server, amd64 or arm64. A 4 GB / 1 vCPU VM is plenty for a handful of small apps: an idle Go app uses tens of MB of RAM.
 
+Ports 80 and 443 must be reachable from the internet; Let's Encrypt connects on port 80 to issue certificates. If your provider has a firewall outside the server (Oracle Cloud's security lists, AWS security groups, Google Cloud firewall rules), allow TCP 80 and 443 from anywhere there. The installer offers to open the server's own firewall.
+
 ## 1. DNS
 
 At your DNS provider, add a wildcard **A** record for your domain pointing at the server's IPv4 address (and an **AAAA** record if it has IPv6):
@@ -27,7 +29,7 @@ It asks two things:
 - **Domain**: `example.com`. Apps get `<name>.example.com`; the dashboard is `sideyard.example.com`. Press Enter for the sslip.io name instead.
 - **Admin password**, twice (12+ characters). Leave it empty and one is generated and shown once.
 
-It then checks that ports 80 and 443 are free, shows the DNS record to add if `sideyard.<domain>` doesn't point at the server yet, offers to open ports 80 and 443 if `ufw` is on, and asks before changing anything. Then it:
+It then checks that ports 80 and 443 are free, shows the DNS record to add if `sideyard.<domain>` doesn't point at the server yet, offers to open ports 80 and 443 if `ufw` is on or iptables turns them away (Oracle Cloud's images let in only SSH), and asks before changing anything. Then it:
 
 | Step | Where |
 |---|---|
