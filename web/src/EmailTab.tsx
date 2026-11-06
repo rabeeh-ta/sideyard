@@ -35,7 +35,7 @@ export function EmailTab({ name }: { name: string }) {
       <div className="card empty">
         <h3>Email isn't set up</h3>
         <p className="muted">
-          Connect an email provider once in <a href="#/settings">Platform settings</a>, then every project can send through it
+          Connect an email provider once on the <a href="#/email">Email</a> page, then every project can send through it
           without its own credentials.
         </p>
       </div>

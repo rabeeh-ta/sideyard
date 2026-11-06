@@ -474,7 +474,7 @@ curl --fail-with-body -H "Authorization: Bearer $SIDEYARD_TOKEN" -F binary=@app 
         <section id="email">
           <h2>Email</h2>
           <p>
-            In <strong>Platform settings → Email</strong>, set one SMTP server (any provider), a default sender and
+            On the dashboard's <strong>Email</strong> page, set one SMTP server (any provider), a default sender and
             the sender domains you've verified with the provider. Each project picks its sender in its
             <strong>Email</strong> tab, and the app sends with its own token:
           </p>
@@ -500,7 +500,7 @@ curl --fail-with-body -H "Authorization: Bearer $SIDEYARD_TOKEN" -F binary=@app 
         <section id="backups">
           <h2>Backups</h2>
           <p>
-            In <strong>Platform settings → Backups</strong>, connect a bucket used only for backups. Every 6 hours by
+            On the dashboard's <strong>Backups</strong> page, connect a bucket used only for backups. Every 6 hours by
             default, Sideyard snapshots its own database and every app's SQLite files and uploads them gzipped. Copies
             older than 14 days are deleted, except the newest three of each. Restore one from
             <strong>Database → Backups in S3</strong>.

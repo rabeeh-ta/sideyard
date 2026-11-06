@@ -19,8 +19,8 @@ import (
 )
 
 // Backups copy every database off the server: Sideyard's own and each
-// app's, as consistent snapshots, gzipped, to an S3 bucket configured in
-// Platform settings. Nothing runs until a bucket is connected and enabled.
+// app's, as consistent snapshots, gzipped, to an S3 bucket configured on
+// the dashboard's Backups page. Nothing runs until a bucket is connected and enabled.
 //
 //	<prefix>sideyard/sideyard.db/<UTC time>.db.gz
 //	<prefix>projects/<project>/<path in DATA_DIR>/<UTC time>.db.gz
@@ -133,7 +133,7 @@ func (p *Platform) activeBackups() (*s3.Client, storedBackups, error) {
 		return nil, st, err
 	}
 	if !st.Enabled {
-		return nil, st, invalid("backups aren't set up; connect a bucket in Platform settings")
+		return nil, st, invalid("backups aren't set up; connect a bucket on the dashboard's Backups page")
 	}
 	c, err := p.backupClient(st)
 	return c, st, err

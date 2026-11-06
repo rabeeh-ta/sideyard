@@ -33,7 +33,7 @@ export function RemoteBackups({ name, path, onRestored }: { name: string; path: 
       description={
         data && !data.enabled ? (
           <>
-            Off. Connect a backup bucket in <a href="#/settings">Platform settings</a> to copy every database off the server
+            Off. Connect a backup bucket on the <a href="#/backups">Backups</a> page to copy every database off the server
             on a schedule.
           </>
         ) : (

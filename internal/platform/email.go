@@ -13,8 +13,8 @@ import (
 	"sideyard/internal/store"
 )
 
-// Email is one SMTP provider for the whole platform, configured in
-// Platform settings. Apps never see its credentials: they send through
+// Email is one SMTP provider for the whole platform, configured on
+// the dashboard's Email page. Apps never see its credentials: they send through
 // Sideyard's API with their SIDEYARD_TOKEN, from their project's sender,
 // and every attempt lands in the project's delivery log.
 const (
@@ -151,7 +151,7 @@ func (p *Platform) SendEmail(ctx context.Context, name string, req EmailRequest)
 		return err
 	}
 	if !st.Enabled {
-		return invalid("email isn't set up; configure a provider in Platform settings")
+		return invalid("email isn't set up; configure a provider on the dashboard's Email page")
 	}
 	n, err := p.store.EmailsSince(proj.ID, time.Now().Add(-time.Minute))
 	if err != nil {
@@ -195,7 +195,7 @@ func buildMessage(proj store.Project, st storedEmail, req EmailRequest) (mail.Me
 		return mail.Message{}, invalid("sender %q isn't an email address", from)
 	}
 	if !domainAllowed(sender.Address, st.SenderDomains) {
-		return mail.Message{}, invalid("%s isn't on a sender domain set up in Platform settings", sender.Address)
+		return mail.Message{}, invalid("%s isn't on a sender domain set up on the dashboard's Email page", sender.Address)
 	}
 	if len(req.To) == 0 || len(req.To) > maxEmailReceivers {
 		return mail.Message{}, invalid("send to 1 to %d recipients", maxEmailReceivers)
@@ -318,7 +318,7 @@ func (p *Platform) SetProjectSender(name, from string) error {
 			return err
 		}
 		if !domainAllowed(a.Address, st.SenderDomains) {
-			return invalid("%s isn't on a sender domain set up in Platform settings (%s)", a.Address, strings.Join(st.SenderDomains, ", "))
+			return invalid("%s isn't on a sender domain set up on the dashboard's Email page (%s)", a.Address, strings.Join(st.SenderDomains, ", "))
 		}
 		from = a.String()
 	}

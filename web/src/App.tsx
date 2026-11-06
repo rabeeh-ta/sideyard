@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type FormEvent } from 'react'
+import { createContext, useContext, useEffect, useState, type ComponentType, type FormEvent } from 'react'
 import {
   Archive,
   ArrowUpCircle,
@@ -7,6 +7,7 @@ import {
   ChevronsUpDown,
   Clock,
   Database,
+  DatabaseBackup,
   Globe,
   House,
   KeyRound,
@@ -29,6 +30,8 @@ import { formatBytes, go, usePoll, useRoute, useTheme } from './lib'
 import { ProjectsPage } from './ProjectsPage'
 import { flushSections, ProjectRoutes } from './ProjectPage'
 import { McpPage } from './McpPage'
+import { BackupsPage } from './BackupsPage'
+import { EmailPage } from './EmailPage'
 import { PlatformSettings } from './PlatformSettings'
 import { SystemPage } from './SystemPage'
 import { Logo, Menu } from './ui'
@@ -119,13 +122,23 @@ const projectNav: NavItem[] = [
   { section: 'settings', label: 'Project settings', icon: Settings },
 ]
 
+/** The sidebar's pages for the whole server, each at #/<section> (Projects at #/). */
+const platformNav: { section: string; label: string; icon: LucideIcon; page: ComponentType }[] = [
+  { section: 'projects', label: 'Projects', icon: LayoutGrid, page: ProjectsPage },
+  { section: 'email', label: 'Email', icon: Mail, page: EmailPage },
+  { section: 'backups', label: 'Backups', icon: DatabaseBackup, page: BackupsPage },
+  { section: 'mcp', label: 'MCP', icon: Bot, page: McpPage },
+  { section: 'system', label: 'System', icon: Server, page: SystemPage },
+]
+
 function Shell({ onSignedOut }: { onSignedOut: () => void }) {
   const route = useRoute()
   const [theme, toggleTheme] = useTheme()
   const { data: server } = usePoll(api.server, 5000, 'server')
   const { data: update } = usePoll(api.update, 10 * 60 * 1000, 'update')
   const project = route[0] === 'p' ? route[1] : null
-  const section = project ? route[2] || 'overview' : ['settings', 'system', 'mcp'].includes(route[0]) ? route[0] : 'projects'
+  const platformPage = platformNav.find((item) => item.section === route[0]) ?? platformNav[0]
+  const section = project ? route[2] || 'overview' : route[0] === 'settings' ? 'settings' : platformPage.section
 
   async function signOut() {
     await api.logout().catch(() => {})
@@ -153,7 +166,7 @@ function Shell({ onSignedOut }: { onSignedOut: () => void }) {
             {!project && section !== 'projects' && (
               <>
                 <span className="crumb-sep">/</span>
-                <span className="crumb">{{ system: 'System', mcp: 'MCP' }[section] ?? 'Platform settings'}</span>
+                <span className="crumb">{section === 'settings' ? 'Platform settings' : platformPage.label}</span>
               </>
             )}
           </div>
@@ -205,20 +218,16 @@ function Shell({ onSignedOut }: { onSignedOut: () => void }) {
                 ),
               )
             ) : (
-              <>
-                <a href="#/" className={`side-item ${section === 'projects' ? 'active' : ''}`}>
-                  <LayoutGrid size={18} />
-                  <span>Projects</span>
+              platformNav.map((item) => (
+                <a
+                  key={item.section}
+                  href={`#/${item.section === 'projects' ? '' : item.section}`}
+                  className={`side-item ${section === item.section ? 'active' : ''}`}
+                >
+                  <item.icon size={18} />
+                  <span>{item.label}</span>
                 </a>
-                <a href="#/mcp" className={`side-item ${section === 'mcp' ? 'active' : ''}`}>
-                  <Bot size={18} />
-                  <span>MCP</span>
-                </a>
-                <a href="#/system" className={`side-item ${section === 'system' ? 'active' : ''}`}>
-                  <Server size={18} />
-                  <span>System</span>
-                </a>
-              </>
+              ))
             )}
             <div className="side-spacer" />
             <div className="side-sep" />
@@ -246,12 +255,8 @@ function Shell({ onSignedOut }: { onSignedOut: () => void }) {
               <div className="page narrow">
                 <PlatformSettings focus={route[1]} />
               </div>
-            ) : route[0] === 'system' ? (
-              <SystemPage />
-            ) : route[0] === 'mcp' ? (
-              <McpPage />
             ) : (
-              <ProjectsPage />
+              <platformPage.page />
             )}
           </main>
         </div>
