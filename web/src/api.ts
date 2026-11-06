@@ -292,6 +292,37 @@ export type ProjectEmail = {
   log: EmailLog[]
 }
 
+export type OAuthProvider = {
+  id: 'google' | 'github'
+  name: string
+  enabled: boolean
+  clientId: string
+  /** Only sent in; empty keeps the saved one. */
+  clientSecret?: string
+  hasSecret: boolean
+  /** The redirect URI to register with the provider. */
+  callbackUrl: string
+  consoleUrl: string
+}
+
+export type SignInPerson = {
+  provider: string
+  id: string
+  email: string
+  name: string
+  avatarUrl: string
+  count: number
+  firstAt: string
+  lastAt: string
+}
+
+export type ProjectSignIns = {
+  /** The providers set up on the OAuth page, which the app can use. */
+  providers: string[]
+  total: number
+  people: SignInPerson[]
+}
+
 export type BackupSettings = {
   enabled: boolean
   endpoint: string
@@ -460,6 +491,8 @@ export const api = {
   setSender: (name: string, sender: string) => request<void>('PUT', `${p(name)}/email`, { sender }),
   projectTestEmail: (name: string, to: string) => request<void>('POST', `${p(name)}/email/test`, { to }),
 
+  projectSignIns: (name: string) => request<ProjectSignIns>('GET', `${p(name)}/oauth`),
+
   mcp: () => request<{ tokens: AccessToken[]; calls: McpCall[] }>('GET', '/api/mcp'),
   createAccessToken: (name: string, access: AccessLevel) =>
     request<{ token: AccessToken; secret: string }>('POST', '/api/mcp/tokens', { name, access }),
@@ -471,6 +504,10 @@ export const api = {
   backupRuns: () => request<BackupRun[]>('GET', '/api/settings/backups/runs'),
   saveEmail: (s: EmailSettings) => request<void>('PUT', '/api/settings/email', s),
   testEmail: (to: string) => request<void>('POST', '/api/settings/email/test', { to }),
+  oauthProviders: () => request<{ providers: OAuthProvider[] }>('GET', '/api/settings/oauth'),
+  saveOAuthProvider: (id: string, s: { enabled: boolean; clientId: string; clientSecret: string }) =>
+    request<void>('PUT', `/api/settings/oauth/${id}`, s),
+  testOAuthProvider: (id: string) => request<{ url: string }>('POST', `/api/settings/oauth/${id}/test`),
   changePassword: (current: string, next: string) =>
     request<void>('POST', '/api/settings/password', { current, new: next }),
   masterKey: async (password: string): Promise<Blob> => {

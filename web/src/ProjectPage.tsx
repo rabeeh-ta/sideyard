@@ -12,6 +12,7 @@ import { DatabaseTab } from './DatabaseTab'
 import { StorageTab } from './StorageTab'
 import { JobsTab } from './JobsTab'
 import { EmailTab } from './EmailTab'
+import { SignInTab } from './SignInTab'
 import { AreaChart, bytes, NoMetrics, percent, RangePicker, type Range } from './Chart'
 
 // The editors bring the data grid and CodeMirror; load them when opened.
@@ -29,6 +30,7 @@ const sections: Record<string, { title: string; description?: string }> = {
   storage: { title: 'Storage', description: "This project's S3 bucket." },
   jobs: { title: 'Jobs', description: 'Scheduled calls into the app.' },
   email: { title: 'Email', description: 'Who this project sends as, and what it has sent.' },
+  signin: { title: 'Sign-in', description: 'Google and GitHub sign-in for the app, and who has signed in.' },
   variables: { title: 'Variables', description: 'Environment variables and secrets for the app.' },
   domains: { title: 'Domains', description: 'Where this project answers. Each domain gets HTTPS automatically.' },
   settings: { title: 'Settings', description: 'Runtime, deploy token.' },
@@ -72,6 +74,7 @@ export function ProjectRoutes({ name, section, sub }: { name: string; section: s
       {section === 'storage' && <StorageTab name={name} prefix={sub ?? ''} />}
       {section === 'jobs' && <JobsTab name={name} />}
       {section === 'email' && <EmailTab name={name} />}
+      {section === 'signin' && <SignInTab name={name} />}
       {section === 'variables' && <VariablesTab name={name} />}
       {section === 'domains' && <DomainsTab project={project} onChange={reload} />}
       {section === 'settings' && <SettingsTab project={project} onChange={reload} />}

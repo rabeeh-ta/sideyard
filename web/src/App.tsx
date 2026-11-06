@@ -13,6 +13,7 @@ import {
   KeyRound,
   LayoutGrid,
   LogOut,
+  LogIn,
   Mail,
   Moon,
   Rocket,
@@ -32,6 +33,7 @@ import { flushSections, ProjectRoutes } from './ProjectPage'
 import { McpPage } from './McpPage'
 import { BackupsPage } from './BackupsPage'
 import { EmailPage } from './EmailPage'
+import { OAuthPage } from './OAuthPage'
 import { PlatformSettings } from './PlatformSettings'
 import { SystemPage } from './SystemPage'
 import { Logo, Menu } from './ui'
@@ -114,6 +116,7 @@ const projectNav: NavItem[] = [
   { section: 'storage', label: 'Storage', icon: Archive },
   { section: 'jobs', label: 'Jobs', icon: Clock },
   { section: 'email', label: 'Email', icon: Mail },
+  { section: 'signin', label: 'Sign-in', icon: LogIn },
   'sep',
   { section: 'deployments', label: 'Deployments', icon: Rocket },
   { section: 'logs', label: 'Logs', icon: ScrollText },
@@ -126,6 +129,7 @@ const projectNav: NavItem[] = [
 const platformNav: { section: string; label: string; icon: LucideIcon; page: ComponentType }[] = [
   { section: 'projects', label: 'Projects', icon: LayoutGrid, page: ProjectsPage },
   { section: 'email', label: 'Email', icon: Mail, page: EmailPage },
+  { section: 'oauth', label: 'OAuth', icon: LogIn, page: OAuthPage },
   { section: 'backups', label: 'Backups', icon: DatabaseBackup, page: BackupsPage },
   { section: 'mcp', label: 'MCP', icon: Bot, page: McpPage },
   { section: 'system', label: 'System', icon: Server, page: SystemPage },
