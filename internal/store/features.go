@@ -537,3 +537,57 @@ func (s *Store) Snapshot(dst string) error {
 	_, err := s.db.Exec(`VACUUM INTO ?`, dst)
 	return err
 }
+
+// --- sign-ins ---
+
+// SignIn is one person who signed in to a project's app through Sideyard,
+// with their latest details from the provider.
+type SignIn struct {
+	ProjectID int64
+	Provider  string
+	Subject   string // the provider's ID for the person
+	Email     string
+	Name      string
+	AvatarURL string
+	Count     int
+	FirstAt   time.Time
+	LastAt    time.Time
+}
+
+// RecordSignIn adds a sign-in to the person's row, creating it on their first.
+func (s *Store) RecordSignIn(u SignIn) error {
+	now := time.Now().Unix()
+	_, err := s.db.Exec(`INSERT INTO sign_ins (project_id, provider, subject, email, name, avatar_url, count, first_at, last_at)
+		VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)
+		ON CONFLICT (project_id, provider, subject) DO UPDATE SET
+			email = excluded.email, name = excluded.name, avatar_url = excluded.avatar_url,
+			count = count + 1, last_at = excluded.last_at`,
+		u.ProjectID, u.Provider, u.Subject, u.Email, u.Name, u.AvatarURL, now, now)
+	return err
+}
+
+// SignIns returns a project's people, most recently signed in first, and
+// how many there are in all.
+func (s *Store) SignIns(projectID int64, limit int) ([]SignIn, int, error) {
+	var total int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM sign_ins WHERE project_id = ?`, projectID).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	rows, err := s.db.Query(`SELECT provider, subject, email, name, avatar_url, count, first_at, last_at
+		FROM sign_ins WHERE project_id = ? ORDER BY last_at DESC, rowid DESC LIMIT ?`, projectID, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+	var out []SignIn
+	for rows.Next() {
+		u := SignIn{ProjectID: projectID}
+		var first, last int64
+		if err := rows.Scan(&u.Provider, &u.Subject, &u.Email, &u.Name, &u.AvatarURL, &u.Count, &first, &last); err != nil {
+			return nil, 0, err
+		}
+		u.FirstAt, u.LastAt = time.Unix(first, 0).UTC(), time.Unix(last, 0).UTC()
+		out = append(out, u)
+	}
+	return out, total, rows.Err()
+}

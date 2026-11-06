@@ -280,3 +280,42 @@ func freeAddr(t *testing.T) string {
 	defer l.Close()
 	return l.Addr().String()
 }
+
+// TestSignInAPI checks the sign-in endpoints' access rules; the flow itself
+// is tested in the platform package against a fake provider.
+func TestSignInAPI(t *testing.T) {
+	_, _, c, password := startServer(t)
+	c.do("POST", "/api/login", map[string]string{"password": password}, 200)
+	c.do("POST", "/api/projects", map[string]string{"name": "demo"}, 201)
+
+	var settings struct {
+		Providers []platform.OAuthProviderView `json:"providers"`
+	}
+	json.Unmarshal(c.do("GET", "/api/settings/oauth", nil, 200), &settings)
+	if len(settings.Providers) != 2 || !strings.HasSuffix(settings.Providers[1].CallbackURL, "/api/oauth/github/callback") {
+		t.Fatalf("providers: %+v", settings.Providers)
+	}
+	c.do("PUT", "/api/settings/oauth/google", map[string]any{"enabled": true, "clientId": "id", "clientSecret": "secret"}, 204)
+	json.Unmarshal(c.do("GET", "/api/settings/oauth", nil, 200), &settings)
+	if p := settings.Providers[0]; !p.Enabled || !p.HasSecret || p.ClientSecret != "" {
+		t.Fatalf("google after saving: %+v", p)
+	}
+	var test struct {
+		URL string `json:"url"`
+	}
+	json.Unmarshal(c.do("POST", "/api/settings/oauth/google/test", map[string]any{}, 200), &test)
+	if !strings.HasPrefix(test.URL, "https://accounts.google.com/") {
+		t.Fatalf("test sign-in URL %q", test.URL)
+	}
+	c.do("GET", "/api/projects/demo/oauth", nil, 200)
+
+	// Apps need their token; a dashboard session isn't enough.
+	c.do("POST", "/api/projects/demo/oauth/start", map[string]string{"provider": "google", "redirect": "http://demo.localhost/cb"}, 401)
+	c.do("POST", "/api/projects/demo/oauth/exchange", map[string]string{"code": "x", "state": "y"}, 401)
+	// A callback Sideyard didn't start ends on its own error page.
+	if body := c.do("GET", "/api/oauth/google/callback?state=nope&code=x", nil, 400); !bytes.Contains(body, []byte("expired")) {
+		t.Fatalf("callback page: %s", body)
+	}
+	c.do("POST", "/api/logout", nil, 200)
+	c.do("GET", "/api/settings/oauth", nil, 401)
+}

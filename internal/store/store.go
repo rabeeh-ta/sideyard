@@ -43,7 +43,7 @@ type Project struct {
 	MemoryMB     int // 0 means no limit
 	CPUPercent   int // 0 means no limit
 	// AppToken (encrypted) is the app's SIDEYARD_TOKEN: Sideyard sends it
-	// with job calls, and the app sends it to Sideyard's email API.
+	// with job calls, and the app sends it to Sideyard's email and sign-in APIs.
 	AppToken  []byte
 	EmailFrom string // the project's sender; empty means the platform default
 	CreatedAt time.Time
@@ -223,6 +223,19 @@ var migrations = []string{
 		error TEXT NOT NULL DEFAULT '',
 		created_at INTEGER NOT NULL
 	);`,
+	`CREATE TABLE sign_ins (
+		project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+		provider TEXT NOT NULL,
+		subject TEXT NOT NULL,
+		email TEXT NOT NULL,
+		name TEXT NOT NULL,
+		avatar_url TEXT NOT NULL,
+		count INTEGER NOT NULL,
+		first_at INTEGER NOT NULL,
+		last_at INTEGER NOT NULL,
+		PRIMARY KEY (project_id, provider, subject)
+	);
+	CREATE INDEX sign_ins_by_last ON sign_ins (project_id, last_at);`,
 }
 
 func (s *Store) migrate() error {

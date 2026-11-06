@@ -2,7 +2,6 @@ package api
 
 import (
 	"net/http"
-	"strings"
 
 	"sideyard/internal/platform"
 )
@@ -57,17 +56,14 @@ func (s *Server) projectTestEmail(w http.ResponseWriter, r *http.Request) {
 //	Authorization: Bearer $SIDEYARD_TOKEN
 //	{"to": ["a@example.com"], "subject": "…", "text": "…", "html": "…"}
 func (s *Server) appSendEmail(w http.ResponseWriter, r *http.Request) {
-	name := r.PathValue("name")
-	token, _ := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
-	if !s.p.AppAuthorized(name, strings.TrimSpace(token)) {
-		writeError(w, http.StatusUnauthorized, "invalid SIDEYARD_TOKEN")
+	if !s.appAuthorized(w, r) {
 		return
 	}
 	var req platform.EmailRequest
 	if !readJSON(w, r, &req) {
 		return
 	}
-	if err := s.p.SendEmail(r.Context(), name, req); err != nil {
+	if err := s.p.SendEmail(r.Context(), r.PathValue("name"), req); err != nil {
 		writeErr(w, err)
 		return
 	}

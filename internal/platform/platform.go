@@ -77,6 +77,9 @@ type Platform struct {
 	version        string
 	started        time.Time
 
+	// signIns holds OAuth sign-ins in progress and their one-time codes.
+	signIns signIns
+
 	upd     updateState
 	restart chan struct{}
 	// exe is the binary updates replace; tests point it at a stand-in.

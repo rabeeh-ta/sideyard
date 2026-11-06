@@ -39,6 +39,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/projects/{name}/deploys", s.deploy)
 	// Called by apps, with their SIDEYARD_TOKEN.
 	mux.HandleFunc("POST /api/projects/{name}/email/send", s.appSendEmail)
+	mux.HandleFunc("POST /api/projects/{name}/oauth/start", s.appStartSignIn)
+	mux.HandleFunc("POST /api/projects/{name}/oauth/exchange", s.appExchangeSignIn)
+	// Where providers send the browser back after a sign-in.
+	mux.HandleFunc("GET /api/oauth/{provider}/callback", s.oauthCallback)
 	// Called by agents, with an access token from the MCP page.
 	mux.Handle("/mcp", s.mcpHandler())
 
@@ -101,6 +105,12 @@ func (s *Server) Handler() http.Handler {
 	auth("GET /api/projects/{name}/email", s.projectEmail)
 	auth("PUT /api/projects/{name}/email", s.setProjectSender)
 	auth("POST /api/projects/{name}/email/test", s.projectTestEmail)
+
+	auth("GET /api/projects/{name}/oauth", s.projectSignIns)
+
+	auth("GET /api/settings/oauth", s.oauthProviders)
+	auth("PUT /api/settings/oauth/{provider}", s.saveOAuthProvider)
+	auth("POST /api/settings/oauth/{provider}/test", s.testOAuthProvider)
 
 	auth("GET /api/settings", s.getSettings)
 	auth("PUT /api/settings/backups", s.saveBackupSettings)

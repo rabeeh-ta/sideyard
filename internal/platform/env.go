@@ -28,8 +28,8 @@ var baseBuiltins = []Builtin{
 	{"DATABASE_PATH", "SQLite file to use: $DATA_DIR/app.db"},
 	{"SIDEYARD_PROJECT", "This project's name"},
 	{"SIDEYARD_RELEASE", "The release number running"},
-	{"SIDEYARD_TOKEN", "Secret shared with Sideyard: job calls carry it, and the app sends it to the email API"},
-	{"SIDEYARD_API_URL", "Sideyard's API on this server, for sending email"},
+	{"SIDEYARD_TOKEN", "Secret shared with Sideyard: job calls carry it, and the app sends it to the email and sign-in APIs"},
+	{"SIDEYARD_API_URL", "Sideyard's API on this server, for sending email and signing people in"},
 }
 
 // storageBuiltins are set while the project has a bucket connected. The
