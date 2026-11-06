@@ -4,10 +4,10 @@ This app will run on **Sideyard**, a self-hosted platform that runs many small a
 
 Do this in order:
 
-1. **Scaffold.** Create every file under "Files" below in the current directory, exactly as given, plus an empty `web/dist/.gitkeep` (the binary embeds `web/dist`, so it must exist). Make `scripts/deploy.sh` executable. These files are Sideyard's starter template: the parts that talk to Sideyard (environment, health check, graceful shutdown, migrations, jobs, email, the embedded frontend, the deploy workflow) are already right, and a small notes feature shows them working together. You may rename the module in `go.mod`; keep the binary's name, `app`.
+1. **Scaffold.** Create every file under "Files" below in the current directory, exactly as given, plus an empty `web/dist/.gitkeep` (the binary embeds `web/dist`, so it must exist). Make `scripts/deploy.sh` executable. These files are Sideyard's starter template: the parts that talk to Sideyard (environment, health check, graceful shutdown, migrations, jobs, email, Google and GitHub sign-in, the embedded frontend, the deploy workflow) are already right, and a small notes feature shows them working together. You may rename the module in `go.mod`; keep the binary's name, `app`.
 2. **Install and check.** Run `go mod tidy` and `cd web && npm install`, then the checks at the end of `AGENTS.md`. Start the API with `make api` and confirm `curl http://127.0.0.1:3000/healthz` prints `ok`.
 3. **Build.** Build the app I describe at the end of this message, replacing the notes example: `notes.go`, its routes in `main.go`, its migration in `db.go`, its job in `jobs.go` and `web/src/App.tsx`. Nothing has been deployed yet, so rewrite the notes migration rather than appending one that drops it. If I haven't described an app, stop after step 2, tell me the scaffold is ready and ask what we're building.
-4. **Hand over.** When it works locally, tell me how to deploy: create a project in the Sideyard dashboard (and connect a bucket in its Storage tab if the app stores files), set the GitHub secret and variables listed at the top of `.github/workflows/deploy.yml` (`SIDEYARD_ARCH` too if the server is ARM), and push to `main`. If Sideyard's MCP tools are available to you, deploy it yourself instead: `create_project`, then `deploy`, then check it with `get_project` and `get_logs`, and give me its URL.
+4. **Hand over.** When it works locally, tell me how to deploy: create a project in the Sideyard dashboard (and connect a bucket in its Storage tab if the app stores files; if it signs people in, check Google or GitHub is set up on the dashboard's OAuth page), set the GitHub secret and variables listed at the top of `.github/workflows/deploy.yml` (`SIDEYARD_ARCH` too if the server is ARM), and push to `main`. If Sideyard's MCP tools are available to you, deploy it yourself instead: `create_project`, then `deploy`, then check it with `get_project` and `get_logs`, and give me its URL.
 
 `AGENTS.md` is the contract and stays in the repo, so every later session follows it too. When a feature seems to need something outside the stack (Postgres, Redis, a queue, a separate worker, a Node server, Docker, cron), build it inside the stack the way `AGENTS.md` describes, and tell me if something truly can't fit.
 
@@ -43,7 +43,11 @@ Scheduled work runs through Sideyard, not goroutine timers: Sideyard calls `POST
 
 ## Email
 
-Send with `sendEmail` in `email.go`. It posts to Sideyard's API with the app's token; Sideyard holds the provider's credentials and the sender address, and logs every email in the project's Email tab.
+Send with `sendEmail` in `email.go`. It posts to Sideyard's API with the app's token (`sideyardAPI` in `sideyard.go`); Sideyard holds the provider's credentials and the sender address, and logs every email in the project's Email tab.
+
+## Sign-in
+
+People sign in with Google or GitHub through Sideyard, which holds the OAuth clients (set up once on the dashboard's OAuth page, shared by every app on the server). `auth.go` has the two halves: route `GET /auth/{provider}` to `startSignIn` and link "Sign in with Google" to `/auth/google` (or `/auth/github`); in `GET /auth/callback`, `finishSignIn` returns who signed in (`Provider`, `ID`, `Email`, `EmailVerified`, `Name`, `AvatarURL`) or an error to show with a link to try again. The app owns users and sessions: a `users` table keyed by `(provider, provider_id)`, never by email alone (it can change, and GitHub's can be empty), and a `sessions` table holding a random token behind an `HttpOnly`, `Secure`, `SameSite=Lax` cookie. Link a second provider to an existing user only when both emails are verified and equal. The callback must stay at `/auth/callback` on the app's own domain: Sideyard refuses to send the browser anywhere else. Sign-in works only on Sideyard, since it needs `SIDEYARD_API_URL`; in local development, fake the signed-in user behind a flag rather than calling Google. Passwords, magic links and other providers are still the app's own code, with keys in Variables.
 
 ## Files and uploads
 
@@ -295,7 +299,7 @@ func jobHandler(db *sql.DB) http.HandlerFunc {
 }
 ```
 
-### `email.go`
+### `sideyard.go`
 
 ```go
 package main
@@ -304,22 +308,26 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 )
 
-// sendEmail sends through Sideyard, which holds the email provider's
-// credentials: the app authenticates with its SIDEYARD_TOKEN. The sender is
-// the one set in the project's Email tab. html may be empty.
-func sendEmail(ctx context.Context, to []string, subject, text, html string) error {
-	body, err := json.Marshal(map[string]any{"to": to, "subject": subject, "text": text, "html": html})
+// sideyardAPI posts in as JSON to Sideyard's API for this project, at
+// $SIDEYARD_API_URL/api/projects/$SIDEYARD_PROJECT/<path>, authenticated
+// with the app's SIDEYARD_TOKEN, and decodes the answer into out (if not nil).
+func sideyardAPI(ctx context.Context, path string, in, out any) error {
+	base, project := os.Getenv("SIDEYARD_API_URL"), os.Getenv("SIDEYARD_PROJECT")
+	if base == "" || project == "" {
+		return errors.New("not running on Sideyard: SIDEYARD_API_URL and SIDEYARD_PROJECT aren't set")
+	}
+	body, err := json.Marshal(in)
 	if err != nil {
 		return err
 	}
-	url := os.Getenv("SIDEYARD_API_URL") + "/api/projects/" + os.Getenv("SIDEYARD_PROJECT") + "/email/send"
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base+"/api/projects/"+project+"/"+path, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -331,10 +339,115 @@ func sendEmail(ctx context.Context, to []string, subject, text, html string) err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
+		var e struct {
+			Error string `json:"error"`
+		}
 		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return fmt.Errorf("sending email: %s", bytes.TrimSpace(msg))
+		if json.Unmarshal(msg, &e) == nil && e.Error != "" {
+			msg = []byte(e.Error)
+		}
+		return fmt.Errorf("sideyard %s: %s", path, bytes.TrimSpace(msg))
 	}
-	return nil
+	if out == nil {
+		return nil
+	}
+	return json.NewDecoder(resp.Body).Decode(out)
+}
+```
+
+### `email.go`
+
+```go
+package main
+
+import "context"
+
+// sendEmail sends through Sideyard, which holds the email provider's
+// credentials. The sender is the one set in the project's Email tab, and
+// every email shows in that tab's log. html may be empty.
+func sendEmail(ctx context.Context, to []string, subject, text, html string) error {
+	return sideyardAPI(ctx, "email/send", map[string]any{"to": to, "subject": subject, "text": text, "html": html}, nil)
+}
+```
+
+### `auth.go`
+
+```go
+package main
+
+import (
+	"crypto/subtle"
+	"errors"
+	"net/http"
+)
+
+// Sign-in with Google or GitHub goes through Sideyard, which holds the OAuth
+// clients (set up once on the dashboard's OAuth page) and tells the app who
+// signed in. Users and sessions are the app's own. To use it:
+//
+//	mux.HandleFunc("GET /auth/{provider}", startSignIn) // link "Sign in with Google" to /auth/google
+//	mux.HandleFunc("GET /auth/callback", func(w http.ResponseWriter, r *http.Request) {
+//		user, err := finishSignIn(w, r)
+//		// on success: upsert a users row keyed by (user.Provider, user.ID),
+//		// start a session, set its cookie, redirect into the app
+//	})
+
+// signedInUser is who signed in. ID is stable for the provider; Email can
+// change, and from GitHub can be empty, so key users on Provider and ID.
+type signedInUser struct {
+	Provider      string `json:"provider"` // "google" or "github"
+	ID            string `json:"id"`
+	Email         string `json:"email"`
+	EmailVerified bool   `json:"emailVerified"`
+	Name          string `json:"name"`
+	AvatarURL     string `json:"avatarUrl"`
+}
+
+const signInCookie = "signin_state"
+
+// startSignIn sends the browser to the provider named in the path. It comes
+// back to /auth/callback on the domain it started from.
+func startSignIn(w http.ResponseWriter, r *http.Request) {
+	secure := r.Header.Get("X-Forwarded-Proto") != "http"
+	scheme := "https"
+	if !secure {
+		scheme = "http"
+	}
+	var start struct {
+		URL   string `json:"url"`
+		State string `json:"state"`
+	}
+	err := sideyardAPI(r.Context(), "oauth/start", map[string]string{
+		"provider": r.PathValue("provider"),
+		"redirect": scheme + "://" + r.Host + "/auth/callback",
+	}, &start)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	// The state ties the callback to this browser, so nobody can sign it in
+	// as someone else by sending it a link.
+	http.SetCookie(w, &http.Cookie{Name: signInCookie, Value: start.State, Path: "/auth", MaxAge: 600,
+		HttpOnly: true, Secure: secure, SameSite: http.SameSiteLaxMode})
+	http.Redirect(w, r, start.URL, http.StatusFound)
+}
+
+// finishSignIn checks the callback belongs to this browser and asks Sideyard
+// who signed in. An error means the person declined, took too long, or the
+// link wasn't theirs: send them back to sign in again.
+func finishSignIn(w http.ResponseWriter, r *http.Request) (signedInUser, error) {
+	var user signedInUser
+	c, err := r.Cookie(signInCookie)
+	http.SetCookie(w, &http.Cookie{Name: signInCookie, Path: "/auth", MaxAge: -1})
+	q := r.URL.Query()
+	switch {
+	case q.Get("error") != "":
+		return user, errors.New("sign-in didn't complete: " + q.Get("error"))
+	case err != nil || q.Get("state") == "" || subtle.ConstantTimeCompare([]byte(c.Value), []byte(q.Get("state"))) != 1:
+		return user, errors.New("sign-in expired or was started in another browser")
+	}
+	err = sideyardAPI(r.Context(), "oauth/exchange", map[string]string{"code": q.Get("code"), "state": q.Get("state")}, &user)
+	return user, err
 }
 ```
 

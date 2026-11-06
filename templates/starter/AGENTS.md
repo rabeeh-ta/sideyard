@@ -25,7 +25,11 @@ Scheduled work runs through Sideyard, not goroutine timers: Sideyard calls `POST
 
 ## Email
 
-Send with `sendEmail` in `email.go`. It posts to Sideyard's API with the app's token; Sideyard holds the provider's credentials and the sender address, and logs every email in the project's Email tab.
+Send with `sendEmail` in `email.go`. It posts to Sideyard's API with the app's token (`sideyardAPI` in `sideyard.go`); Sideyard holds the provider's credentials and the sender address, and logs every email in the project's Email tab.
+
+## Sign-in
+
+People sign in with Google or GitHub through Sideyard, which holds the OAuth clients (set up once on the dashboard's OAuth page, shared by every app on the server). `auth.go` has the two halves: route `GET /auth/{provider}` to `startSignIn` and link "Sign in with Google" to `/auth/google` (or `/auth/github`); in `GET /auth/callback`, `finishSignIn` returns who signed in (`Provider`, `ID`, `Email`, `EmailVerified`, `Name`, `AvatarURL`) or an error to show with a link to try again. The app owns users and sessions: a `users` table keyed by `(provider, provider_id)`, never by email alone (it can change, and GitHub's can be empty), and a `sessions` table holding a random token behind an `HttpOnly`, `Secure`, `SameSite=Lax` cookie. Link a second provider to an existing user only when both emails are verified and equal. The callback must stay at `/auth/callback` on the app's own domain: Sideyard refuses to send the browser anywhere else. Sign-in works only on Sideyard, since it needs `SIDEYARD_API_URL`; in local development, fake the signed-in user behind a flag rather than calling Google. Passwords, magic links and other providers are still the app's own code, with keys in Variables.
 
 ## Files and uploads
 

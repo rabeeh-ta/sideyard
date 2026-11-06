@@ -25,7 +25,7 @@ claude mcp add --scope user --transport http sideyard https://sideyard.example.c
 | `manage` (default) | also `create_project`, `deploy`, `restart`, `stop`, `rollback`, `set_variables`, `update_settings`, `add_domain`, `remove_domain`, `save_job`, `delete_job`, `run_job`, `new_deploy_token` |
 | `full` | also `delete_project` |
 
-Not available over MCP at any level: revealing a variable's value, the admin password, the master key, Sideyard updates, platform settings and the Backups and Email setup, database import, restore or writes, the storage browser and bucket credentials, and token management itself.
+Not available over MCP at any level: revealing a variable's value, the admin password, the master key, Sideyard updates, platform settings and the Backups, Email and OAuth setup, database import, restore or writes, the storage browser and bucket credentials, and token management itself.
 
 ## Deploys
 

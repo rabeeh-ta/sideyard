@@ -235,6 +235,7 @@
           <a href="#storage">Files and storage</a>
           <a href="#jobs">Jobs</a>
           <a href="#email">Email</a>
+          <a href="#sign-in">Sign-in</a>
           <a href="#logs">Logs and metrics</a>
         </div>
         <div>
@@ -356,7 +357,7 @@ make web-dev   # Vite on :5173, forwards /api to :3000</code></pre></div>
               <tr><td><code>DATA_DIR</code></td><td>Persistent folder that survives deploys; also the working directory</td></tr>
               <tr><td><code>DATABASE_PATH</code></td><td><code>$DATA_DIR/app.db</code></td></tr>
               <tr><td><code>SIDEYARD_PROJECT</code>, <code>SIDEYARD_RELEASE</code></td><td>Project name and release number</td></tr>
-              <tr><td><code>SIDEYARD_TOKEN</code>, <code>SIDEYARD_API_URL</code></td><td>Authenticate <a href="#jobs">job calls</a> and the <a href="#email">email API</a></td></tr>
+              <tr><td><code>SIDEYARD_TOKEN</code>, <code>SIDEYARD_API_URL</code></td><td>Authenticate <a href="#jobs">job calls</a> and the <a href="#email">email</a> and <a href="#sign-in">sign-in</a> APIs</td></tr>
               <tr><td><code>AWS_*</code>, <code>S3_BUCKET</code></td><td>Only while a <a href="#storage">bucket</a> is connected</td></tr>
             </table>
           </div>
@@ -484,6 +485,37 @@ curl --fail-with-body -H "Authorization: Bearer $SIDEYARD_TOKEN" -F binary=@app 
           <p>
             Up to 50 recipients per email and 60 emails a minute per project. The Email tab logs the last 500. The
             starter's <code>sendEmail</code> in <code>email.go</code> does this for you.
+          </p>
+        </section>
+
+        <section id="sign-in">
+          <h2>Sign-in with Google and GitHub</h2>
+          <p>
+            On the dashboard's <strong>OAuth</strong> page, set up Google or GitHub once: create an OAuth client with the
+            provider, register the callback URL the page shows (<code>https://&lt;dashboard&gt;/api/oauth/google/callback</code>,
+            the only one you need however many apps use it) and paste in the client ID and secret. <strong>Test
+            sign-in</strong> checks it end to end. Every app on the server can then sign people in, and never sees the
+            client secret:
+          </p>
+          <ol>
+            <li>The app asks Sideyard to start a sign-in, keeps the returned <code>state</code> in a cookie and sends the browser to the returned <code>url</code>.</li>
+            <li>After the provider, Sideyard sends the browser back to the app with a one-time <code>code</code> and the <code>state</code>.</li>
+            <li>The app checks the state against its cookie and trades the code for who signed in.</li>
+          </ol>
+          <div class="code"><pre><code>curl -X POST "$SIDEYARD_API_URL/api/projects/$SIDEYARD_PROJECT/oauth/start" \
+  -H "Authorization: Bearer $SIDEYARD_TOKEN" -H "Content-Type: application/json" \
+  -d '{"provider": "google", "redirect": "https://notes.example.com/auth/callback"}'
+# → {"url": "https://accounts.google.com/…", "state": "…"}
+
+curl -X POST "$SIDEYARD_API_URL/api/projects/$SIDEYARD_PROJECT/oauth/exchange" \
+  -H "Authorization: Bearer $SIDEYARD_TOKEN" -H "Content-Type: application/json" \
+  -d '{"code": "…", "state": "…"}'
+# → {"provider": "google", "id": "…", "email": "ada@example.com", "emailVerified": true, "name": "Ada", "avatarUrl": "…"}</code></pre></div>
+          <p>
+            The redirect must be on one of the project's domains, and a code works once, for that project and state,
+            within two minutes. The app keeps its own users and sessions; the project's <strong>Sign-in</strong> tab lists
+            who has signed in. The starter's <code>startSignIn</code> and <code>finishSignIn</code> in
+            <code>auth.go</code> do all of this.
           </p>
         </section>
 

@@ -36,7 +36,8 @@ Read the whole project and write `SIDEYARD_MIGRATION.md` with:
 | Files on local disk, S3, Cloudinary, Supabase or Firebase Storage | The project's S3-compatible bucket (`S3_BUCKET` and the `AWS_*` variables, read by the AWS SDK for Go v2), with metadata in SQLite |
 | An email SDK or SMTP (SendGrid, Resend, SES, Postmark, nodemailer) | `sendEmail` in `email.go`; Sideyard holds the provider's credentials and the sender address |
 | WebSockets, server-sent events | Keep them, served by the Go server |
-| Hosted auth (Auth0, Clerk, Firebase Auth, Supabase Auth), payments, LLM APIs, analytics and other HTTP APIs | Keep them; call them from Go or the browser, with keys in the project's Variables tab. Go checks a hosted auth service's tokens against its published signing keys |
+| Sign in with Google or GitHub (Auth.js/NextAuth, Passport, Devise/OmniAuth, social login in Firebase Auth, Supabase Auth, Clerk or Auth0) | `startSignIn` and `finishSignIn` in `auth.go`: Sideyard holds the OAuth clients for every app (the dashboard's OAuth page) and tells the app who signed in. Users and sessions move into the app's SQLite. Existing accounts keep working when matched on the provider's ID (Google's `sub`, GitHub's numeric user ID), which most auth libraries store (Auth.js `accounts.providerAccountId`, Firebase `providerData[].uid`); fall back to a verified email |
+| Other hosted auth (passwords or magic links in Auth0 or Clerk, SAML, other social providers), payments, LLM APIs, analytics and other HTTP APIs | Keep them; call them from Go or the browser, with keys in the project's Variables tab. Go checks a hosted auth service's tokens against its published signing keys |
 | Accounts with passwords in your own database | A `users` table in SQLite. Password hashes move as they are when Go can check that format (bcrypt, argon2, scrypt); otherwise plan a password reset |
 | `.env` files and the old host's secrets | The project's Variables tab in the Sideyard dashboard, read with `os.Getenv` |
 | Dockerfile, docker-compose, Procfile, PM2, the old host's config | Removed once the binary deploys; the binary is the whole deployable |
@@ -44,7 +45,7 @@ Read the whole project and write `SIDEYARD_MIGRATION.md` with:
 ## Phase 2: Restructure (after I approve the plan)
 
 - Work on a new branch, `sideyard`. Leave the current app and its database untouched: they keep serving until the cutover in phase 4.
-- Add the Sideyard files below at the repo root: `AGENTS.md`, `CLAUDE.md`, `go.mod` (rename the module if you like; keep the binary's name, `app`), `main.go`, `db.go`, `jobs.go`, `email.go`, `frontend.go`, `Makefile`, `scripts/deploy.sh` (executable), `.github/workflows/deploy.yml` and the `.gitignore` entries. If the project already has agent instructions, keep what's specific to it in a section after the contract.
+- Add the Sideyard files below at the repo root: `AGENTS.md`, `CLAUDE.md`, `go.mod` (rename the module if you like; keep the binary's name, `app`), `main.go`, `db.go`, `jobs.go`, `sideyard.go`, `email.go`, `auth.go`, `frontend.go`, `Makefile`, `scripts/deploy.sh` (executable), `.github/workflows/deploy.yml` and the `.gitignore` entries. If the project already has agent instructions, keep what's specific to it in a section after the contract.
 - The frontend lives in `web/` with the scripts in `web/package.json` (`build`, `typecheck`) and builds into `web/dist`, which the binary embeds; keep an empty `web/dist/.gitkeep`. In development Vite forwards `/api` to the Go server, as in `web/vite.config.ts`. The frontend calls relative paths on the same origin, so CORS settings and API base URLs go away.
 - The starter's notes example is a placeholder: register this project's routes in `main.go`, its jobs in `jobs.go` and its schema in `db.go` instead.
 - Port the backend route by route, ticking off the checklist and keeping request and response shapes.
@@ -71,7 +72,7 @@ Read the whole project and write `SIDEYARD_MIGRATION.md` with:
 
 - Run the checks at the end of `AGENTS.md`. Then run the app locally against a copy of the migrated database (`make web`, then `DATABASE_PATH=<copy> go run .`), confirm `/healthz` answers `ok` and go through each main flow.
 - Finish `SIDEYARD_MIGRATION.md` with the cutover steps for me:
-  1. In the Sideyard dashboard, create the project, add the variables, connect a bucket in the Storage tab if the app stores files, choose the email sender if it sends email, and create each job with its schedule (list them, with the schedules the old cron used).
+  1. In the Sideyard dashboard, create the project, add the variables, connect a bucket in the Storage tab if the app stores files, choose the email sender if it sends email, set up Google or GitHub on the OAuth page if people sign in with them (the old OAuth clients' redirect URIs don't carry over: Sideyard's callback URL replaces them), and create each job with its schedule (list them, with the schedules the old cron used).
   2. In the project's Database tab, use **Add a database** to upload the migrated SQLite file as `app.db`. An import before the first deploy seeds the project.
   3. Set the GitHub secret and variables listed at the top of `.github/workflows/deploy.yml` (`SIDEYARD_ARCH` too if the server is ARM). Deploy from the `sideyard` branch first by setting the workflow's `on.push.branches` to it, so `main` stays as it is while you test. If the old host builds `main` on every push (Vercel, Netlify, Cloudflare, Render), note that its builds will fail after the merge, and disconnect it at cutover. The workflow fails if the release fails its health check.
   4. Test the app at its Sideyard address. To switch over, stop writes on the old app, re-run the exporter, replace `app.db` with the fresh file in the Database tab (Sideyard keeps the one it replaces as a previous version), copy any new files, then add the custom domain to the project and point its DNS at the server: an `A` record, DNS only (not proxied), since Sideyard gets the certificate itself. Then merge `sideyard` into `main` and point the workflow back at `main`.
@@ -95,7 +96,11 @@ Stop when phase 4 is done. Don't merge, deploy or change DNS yourself.
 
 @file jobs.go
 
+@file sideyard.go
+
 @file email.go
+
+@file auth.go
 
 @file frontend.go
 

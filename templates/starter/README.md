@@ -36,7 +36,7 @@ To deploy from your laptop instead, put the same three values in `.env.deploy` a
 | `DATA_DIR` | Persistent folder; survives deploys |
 | `DATABASE_PATH` | The SQLite file, `$DATA_DIR/app.db` |
 | `SIDEYARD_PROJECT`, `SIDEYARD_RELEASE` | Project name and release number |
-| `SIDEYARD_TOKEN`, `SIDEYARD_API_URL` | Authenticates job calls and the email API (`jobs.go`, `email.go`) |
+| `SIDEYARD_TOKEN`, `SIDEYARD_API_URL` | Authenticates job calls and the email and sign-in APIs (`jobs.go`, `email.go`, `auth.go`) |
 | `AWS_*`, `S3_BUCKET` | Only when a bucket is connected in the Storage tab |
 
 Everything else comes from the project's Variables tab. `AGENTS.md` has the full contract.
