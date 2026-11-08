@@ -2,6 +2,7 @@ package platform
 
 import (
 	"bufio"
+	"compress/gzip"
 	"context"
 	"database/sql"
 	"fmt"
@@ -256,6 +257,67 @@ func TestUpgradedConnectionsSurviveReload(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 	if err := echo("after"); err != nil {
 		t.Fatalf("connection dropped by an unrelated reload: %v", err)
+	}
+}
+
+// The proxy compresses apps' pages for browsers that accept it, leaves tiny
+// responses alone, and still streams server-sent events as they're written.
+func TestCompression(t *testing.T) {
+	e := newTestEnv(t)
+	if _, _, err := e.p.CreateProject("demo"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.deploy("demo"); err != nil {
+		t.Fatal(err)
+	}
+	client := &http.Client{Transport: &http.Transport{DisableCompression: true}, Timeout: 5 * time.Second}
+	request := func(path, accept string) *http.Response {
+		t.Helper()
+		req, _ := http.NewRequest("GET", "http://"+e.cfg.PublicAddr+path, nil)
+		req.Host = "demo.localhost"
+		if accept != "" {
+			req.Header.Set("Accept-Encoding", accept)
+		}
+		resp, err := client.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { resp.Body.Close() })
+		return resp
+	}
+
+	resp := request("/page", "gzip")
+	if resp.Header.Get("Content-Encoding") != "gzip" {
+		t.Fatalf("page encoding %q", resp.Header.Get("Content-Encoding"))
+	}
+	zr, err := gzip.NewReader(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if body, err := io.ReadAll(zr); err != nil || !strings.Contains(string(body), "Sideyard compresses pages.") {
+		t.Fatalf("gunzipped page %q %v", body, err)
+	}
+	if enc := request("/page", "gzip, deflate, br, zstd").Header.Get("Content-Encoding"); enc != "zstd" {
+		t.Fatalf("a browser accepting zstd got %q", enc)
+	}
+	if enc := request("/page", "").Header.Get("Content-Encoding"); enc != "" {
+		t.Fatalf("a client accepting nothing got %q", enc)
+	}
+	if enc := request("/healthz", "gzip").Header.Get("Content-Encoding"); enc != "" {
+		t.Fatalf("a tiny response got %q", enc)
+	}
+
+	// The first event arrives while the app holds the stream open.
+	resp = request("/events", "gzip")
+	body := io.Reader(resp.Body)
+	if resp.Header.Get("Content-Encoding") == "gzip" {
+		if body, err = gzip.NewReader(resp.Body); err != nil {
+			t.Fatal(err)
+		}
+	}
+	line, err := bufio.NewReader(body).ReadString('\n')
+	if err != nil || line != "data: hello\n" {
+		t.Fatalf("first event %q %v", line, err)
 	}
 }
 

@@ -10,6 +10,9 @@ import (
 	"github.com/caddyserver/caddy/v2"
 	// Only the modules Sideyard's config uses, not modules/standard.
 	_ "github.com/caddyserver/caddy/v2/modules/caddyhttp"
+	_ "github.com/caddyserver/caddy/v2/modules/caddyhttp/encode"
+	_ "github.com/caddyserver/caddy/v2/modules/caddyhttp/encode/gzip"
+	_ "github.com/caddyserver/caddy/v2/modules/caddyhttp/encode/zstd"
 	_ "github.com/caddyserver/caddy/v2/modules/caddyhttp/reverseproxy"
 	_ "github.com/caddyserver/caddy/v2/modules/caddytls"
 	_ "github.com/caddyserver/caddy/v2/modules/filestorage"
@@ -65,22 +68,20 @@ func (p *Proxy) build(routes []Route) obj {
 				"terminal": true,
 			})
 		}
-		var handler obj
+		handle := []obj{textResponse(503, r.Message)}
 		if r.Upstream != "" {
-			handler = obj{
+			handle = []obj{compress, {
 				"handler":   "reverse_proxy",
 				"upstreams": []obj{{"dial": r.Upstream}},
 				// Every routing change reloads the whole config, and Caddy
 				// closes WebSockets on reload by default. Keep them open;
 				// they still close when their app's process is replaced.
 				"stream_close_delay": "24h",
-			}
-		} else {
-			handler = textResponse(503, r.Message)
+			}}
 		}
 		caddyRoutes = append(caddyRoutes, obj{
 			"match":    []obj{{"host": r.Hosts}},
-			"handle":   []obj{handler},
+			"handle":   handle,
 			"terminal": true,
 		})
 	}
@@ -109,6 +110,16 @@ func (p *Proxy) build(routes []Route) obj {
 		"storage": obj{"module": "file_system", "root": filepath.Join(p.cfg.DataDir, "caddy")},
 		"apps":    apps,
 	}
+}
+
+// compress zstds or gzips responses for browsers that accept it. Caddy's
+// defaults decide what's worth it: text-like content types only, nothing
+// under 512 bytes, nothing the app already encoded, and server-sent events
+// still flushed as they're written.
+var compress = obj{
+	"handler":   "encode",
+	"encodings": obj{"zstd": obj{}, "gzip": obj{}},
+	"prefer":    []string{"zstd", "gzip"},
 }
 
 func textResponse(status int, body string) obj {

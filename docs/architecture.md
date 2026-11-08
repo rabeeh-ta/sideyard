@@ -11,7 +11,7 @@ Sideyard turns one VPS into a home for many small apps. Every app uses the same 
 | Apps are built in CI or on a laptop, never on the server | Node and the Go toolchain never touch the VPS, and builds can't starve running apps. The server only ever receives a binary. |
 | One Linux binary per release, frontend embedded with `go:embed` | A deploy is one file upload. Rollback means starting an older file. |
 | Pure-Go SQLite (`modernc.org/sqlite`) in apps | `CGO_ENABLED=0 GOOS=linux` cross-compiles from any machine. |
-| Caddy embedded as a Go library | The platform is one binary. Caddy handles certificates, renewals and graceful config swaps. WebSockets stay open through config swaps (`stream_close_delay`), so one app's deploy doesn't disconnect another app's clients. |
+| Caddy embedded as a Go library | The platform is one binary. Caddy handles certificates, renewals and graceful config swaps. WebSockets stay open through config swaps (`stream_close_delay`), so one app's deploy doesn't disconnect another app's clients. It also compresses apps' text responses (zstd or gzip, as the browser accepts), so apps don't have to. |
 | Each release is a transient systemd unit, run as the project's own Unix user | Isolation, memory and CPU limits, and crash restarts come from the kernel and systemd instead of a container runtime. Apps outlive Sideyard, so upgrading Sideyard doesn't restart them. |
 | Each project brings its own S3 bucket | The user pastes bucket credentials per project. A key scoped to one bucket makes the provider enforce isolation, so Sideyard doesn't have to. |
 | Jobs are HTTP calls from Sideyard to the app | One scheduler means no duplicate runs, and apps need no SDK: `POST /_jobs/<name>`. |

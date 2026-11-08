@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -51,6 +52,18 @@ func main() {
 	})
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "release %s greeting %s", os.Getenv("SIDEYARD_RELEASE"), os.Getenv("GREETING"))
+	})
+	// A page big enough for the proxy to compress.
+	http.HandleFunc("/page", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprint(w, strings.Repeat("<p>Sideyard compresses pages.</p>\n", 200))
+	})
+	// Server-sent events: one now, then nothing until the client leaves.
+	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: hello\n\n")
+		http.NewResponseController(w).Flush()
+		<-r.Context().Done()
 	})
 	// An upgraded connection that echoes bytes back, standing in for a WebSocket.
 	http.HandleFunc("/echo", func(w http.ResponseWriter, r *http.Request) {
